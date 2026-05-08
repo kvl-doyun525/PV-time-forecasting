@@ -1,0 +1,77 @@
+# docker/docker-compose.yml
+# 사용법:
+#   docker compose -f docker/docker-compose.yml run --rm unified python ...
+#   docker compose -f docker/docker-compose.yml run --rm time-llm python ...
+
+x-common-volumes: &common-volumes
+  - ../src:/workspace/src
+  - ../conf:/workspace/conf
+  - ../artifacts:/workspace/artifacts
+  - ../vendor/TSLib:/workspace/vendor/TSLib    # 호스트에서 코드 수정 가능
+
+x-gpu-deploy: &gpu-deploy
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+
+  # ─── 통합 이미지 (SegRNN, PatchTST, DLinear, LLaMA, Gemma) ────
+  unified:
+    image: pv-benchmark/unified:latest
+    build:
+      context: ..
+      dockerfile: docker/unified/Dockerfile
+    volumes:
+      - ../src:/workspace/src
+      - ../conf:/workspace/conf
+      - ../artifacts:/workspace/artifacts
+      - ../artifacts/models:/models             # HF 모델 캐시
+      - ../vendor/TSLib:/workspace/vendor/TSLib  # 호스트에서 코드 수정 가능
+    <<: *gpu-deploy
+    env_file: ../.env
+    working_dir: /workspace
+    shm_size: "16gb"
+
+  # ─── Time-LLM ──────────────────────────────────────────────
+  time-llm:
+    image: pv-benchmark/time-llm:latest
+    build:
+      context: ..
+      dockerfile: docker/time_llm/Dockerfile
+    volumes: *common-volumes
+    <<: *gpu-deploy
+    env_file: ../.env
+    working_dir: /workspace
+    shm_size: "8gb"
+
+  # ─── CPU 벤치마크 전용 (GPU 비활성화) ─────────────────────
+  unified-cpu:
+    image: pv-benchmark/unified:latest
+    volumes:
+      - ../src:/workspace/src
+      - ../conf:/workspace/conf
+      - ../artifacts:/workspace/artifacts
+      - ../artifacts/models:/models
+      - ../vendor/TSLib:/workspace/vendor/TSLib
+    environment:
+      - CUDA_VISIBLE_DEVICES=""
+      - OMP_NUM_THREADS=16
+      - MKL_NUM_THREADS=16
+    env_file: ../.env
+    working_dir: /workspace
+    cpus: "16"
+
+  time-llm-cpu:
+    image: pv-benchmark/time-llm:latest
+    volumes: *common-volumes
+    environment:
+      - CUDA_VISIBLE_DEVICES=""
+      - OMP_NUM_THREADS=16
+      - MKL_NUM_THREADS=16
+    working_dir: /workspace
+    cpus: "16"

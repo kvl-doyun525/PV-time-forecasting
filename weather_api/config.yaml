@@ -1,0 +1,48 @@
+# API 설정 파일
+# API 키와 기본 설정을 관리합니다.
+
+# API 키 설정
+# 공공데이터포털(data.go.kr)에서 발급받은 키를 입력하세요
+# 환경 변수로도 설정 가능합니다 (환경 변수가 우선)
+api_keys:
+  weather:
+    # 기상청 단기예보 API 키
+    # 환경 변수: WEATHER_API_KEY
+    key: "8fsu6XbEIR2%2FTjMWUjVqFzwHaCvbImmfl%2F3qxIqx8CGQirKOh7WTMkZvk1yla9JPTWQwVdP41XN28t2scncceQ%3D%3D"  # 여기에 API 키 입력 또는 환경 변수 사용
+  
+  sun_moon:
+    # 일출일몰 정보 API 키
+    # 환경 변수: SUN_MOON_API_KEY
+    key: "8fsu6XbEIR2%2FTjMWUjVqFzwHaCvbImmfl%2F3qxIqx8CGQirKOh7WTMkZvk1yla9JPTWQwVdP41XN28t2scncceQ%3D%3D"  # 여기에 API 키 입력 또는 환경 변수 사용
+  
+  tide:
+    # 조력 정보 API 키 (국립해양조사원)
+    # 환경 변수: TIDE_API_KEY
+    key: "8fsu6XbEIR2%2FTjMWUjVqFzwHaCvbImmfl%2F3qxIqx8CGQirKOh7WTMkZvk1yla9JPTWQwVdP41XN28t2scncceQ%3D%3D"  # 여기에 API 키 입력 또는 환경 변수 사용
+
+# 기본 위치 설정
+default_location:
+  name: "서울"
+  latitude: 37.5665
+  longitude: 126.9780
+  sun_moon_location: "서울"
+  tide_station_code: "DT_0001"  # 인천 관측소
+
+# API 요청 설정
+request:
+  timeout: 30  # 초 단위
+  retry_count: 3  # 재시도 횟수
+  retry_delay: 1  # 재시도 간격 (초)
+
+# 데이터 저장 설정
+data:
+  directory: "data"  # 데이터 저장 디렉토리
+  forecast_subdir: "forecast"  # 예보 데이터 하위 디렉토리
+  sensor_subdir: "sensor"  # 센서 데이터 하위 디렉토리
+  historical_subdir: "historical"  # 과거 데이터 하위 디렉토리
+
+# 로깅 설정
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "weather_api.log"  # 로그 파일명 (None이면 파일 로깅 안 함)

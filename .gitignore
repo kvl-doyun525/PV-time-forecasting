@@ -1,0 +1,9 @@
+recup_dir*/
+krems_db_schema.sql
+photorec.se2
+logs/
+
+# Python 캐시·로컬 비밀 (하위 디렉터리 공통)
+__pycache__/
+*.py[cod]
+.env

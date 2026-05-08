@@ -1,0 +1,1750 @@
+# 지역 및 관측소 코드 설정 파일
+# API 사용 시 필요한 지역 정보를 관리합니다.
+
+# 일출일몰 API 지역명
+# 참고: https://www.data.go.kr/data/15012688/openapi.do
+# getAreaRiseSetInfo API에서 사용하는 지역명 목록
+sun_moon_locations:
+  - name: "가거도"
+    code: "가거도"
+  - name: "가평"
+    code: "가평"
+  - name: "강릉"
+    code: "강릉"
+  - name: "강원고성"
+    code: "강원고성"
+  - name: "강진"
+    code: "강진"
+  - name: "강화"
+    code: "강화"
+  - name: "거제"
+    code: "거제"
+  - name: "거창"
+    code: "거창"
+  - name: "격렬비도"
+    code: "격렬비도"
+  - name: "경기광주"
+    code: "경기광주"
+  - name: "경산"
+    code: "경산"
+  - name: "경주"
+    code: "경주"
+  - name: "경주시감포읍"
+    code: "경주시감포읍"
+  - name: "경주시산내면"
+    code: "경주시산내면"
+  - name: "계룡"
+    code: "계룡"
+  - name: "고령"
+    code: "고령"
+  - name: "고성"
+    code: "고성"
+  - name: "고양"
+    code: "고양"
+  - name: "고창"
+    code: "고창"
+  - name: "고흥"
+    code: "고흥"
+  - name: "곡성"
+    code: "곡성"
+  - name: "공주"
+    code: "공주"
+  - name: "과천"
+    code: "과천"
+  - name: "광명"
+    code: "광명"
+  - name: "광양"
+    code: "광양"
+  - name: "광주"
+    code: "광주"
+  - name: "괴산"
+    code: "괴산"
+  - name: "괴산군연풍면"
+    code: "괴산군연풍면"
+  - name: "구례"
+    code: "구례"
+  - name: "구리"
+    code: "구리"
+  - name: "구미"
+    code: "구미"
+  - name: "군산"
+    code: "군산"
+  - name: "군위"
+    code: "군위"
+  - name: "군포"
+    code: "군포"
+  - name: "금산"
+    code: "금산"
+  - name: "기장"
+    code: "기장"
+  - name: "김제"
+    code: "김제"
+  - name: "김천"
+    code: "김천"
+  - name: "김천시부항면"
+    code: "김천시부항면"
+  - name: "김포"
+    code: "김포"
+  - name: "김해"
+    code: "김해"
+  - name: "나주"
+    code: "나주"
+  - name: "남양주"
+    code: "남양주"
+  - name: "남원"
+    code: "남원"
+  - name: "남해"
+    code: "남해"
+  - name: "논산"
+    code: "논산"
+  - name: "단양"
+    code: "단양"
+  - name: "달성"
+    code: "달성"
+  - name: "담양"
+    code: "담양"
+  - name: "당진"
+    code: "당진"
+  - name: "대관령"
+    code: "대관령"
+  - name: "대구"
+    code: "대구"
+  - name: "대덕전파천문대"
+    code: "대덕전파천문대"
+  - name: "대전"
+    code: "대전"
+  - name: "덕적도"
+    code: "덕적도"
+  - name: "독도"
+    code: "독도"
+  - name: "동두천"
+    code: "동두천"
+  - name: "동해"
+    code: "동해"
+  - name: "마라도"
+    code: "마라도"
+  - name: "목포"
+    code: "목포"
+  - name: "무안"
+    code: "무안"
+  - name: "무주"
+    code: "무주"
+  - name: "문경"
+    code: "문경"
+  - name: "밀양"
+    code: "밀양"
+  - name: "백령도"
+    code: "백령도"
+  - name: "변산"
+    code: "변산"
+  - name: "보령"
+    code: "보령"
+  - name: "보성"
+    code: "보성"
+  - name: "보은"
+    code: "보은"
+  - name: "보현산천문대"
+    code: "보현산천문대"
+  - name: "봉화"
+    code: "봉화"
+  - name: "부산"
+    code: "부산"
+  - name: "부안"
+    code: "부안"
+  - name: "부여"
+    code: "부여"
+  - name: "부천"
+    code: "부천"
+  - name: "사천"
+    code: "사천"
+  - name: "산청"
+    code: "산청"
+  - name: "삼산도"
+    code: "삼산도"
+  - name: "삼척"
+    code: "삼척"
+  - name: "상주"
+    code: "상주"
+  - name: "서귀포"
+    code: "서귀포"
+  - name: "서산"
+    code: "서산"
+  - name: "서울"
+    code: "서울"
+  - name: "서천"
+    code: "서천"
+  - name: "성남"
+    code: "성남"
+  - name: "성산일출"
+    code: "성산일출"
+  - name: "성주"
+    code: "성주"
+  - name: "세종"
+    code: "세종"
+  - name: "소백산천문대"
+    code: "소백산천문대"
+  - name: "속초"
+    code: "속초"
+  - name: "수원"
+    code: "수원"
+  - name: "순창"
+    code: "순창"
+  - name: "순천"
+    code: "순천"
+  - name: "승주"
+    code: "승주"
+  - name: "시흥"
+    code: "시흥"
+  - name: "신안"
+    code: "신안"
+  - name: "신안군임자면"
+    code: "신안군임자면"
+  - name: "아산"
+    code: "아산"
+  - name: "안동"
+    code: "안동"
+  - name: "안산"
+    code: "안산"
+  - name: "안성"
+    code: "안성"
+  - name: "안양"
+    code: "안양"
+  - name: "양구"
+    code: "양구"
+  - name: "양산"
+    code: "양산"
+  - name: "양양"
+    code: "양양"
+  - name: "양주"
+    code: "양주"
+  - name: "양평"
+    code: "양평"
+  - name: "어청도"
+    code: "어청도"
+  - name: "여수"
+    code: "여수"
+  - name: "여수공항"
+    code: "여수공항"
+  - name: "여주"
+    code: "여주"
+  - name: "연세KVN"
+    code: "연세KVN"
+  - name: "연천"
+    code: "연천"
+  - name: "연평도"
+    code: "연평도"
+  - name: "영광"
+    code: "영광"
+  - name: "영덕"
+    code: "영덕"
+  - name: "영동"
+    code: "영동"
+  - name: "영암"
+    code: "영암"
+  - name: "영양"
+    code: "영양"
+  - name: "영월"
+    code: "영월"
+  - name: "영주"
+    code: "영주"
+  - name: "영천"
+    code: "영천"
+  - name: "예산"
+    code: "예산"
+  - name: "예천"
+    code: "예천"
+  - name: "오산"
+    code: "오산"
+  - name: "옥천"
+    code: "옥천"
+  - name: "옹진"
+    code: "옹진"
+  - name: "완도"
+    code: "완도"
+  - name: "완주"
+    code: "완주"
+  - name: "용인"
+    code: "용인"
+  - name: "울릉"
+    code: "울릉"
+  - name: "울산"
+    code: "울산"
+  - name: "울산KVN"
+    code: "울산KVN"
+  - name: "울주"
+    code: "울주"
+  - name: "울진"
+    code: "울진"
+  - name: "원주"
+    code: "원주"
+  - name: "위도"
+    code: "위도"
+  - name: "음성"
+    code: "음성"
+  - name: "의령"
+    code: "의령"
+  - name: "의성"
+    code: "의성"
+  - name: "의왕"
+    code: "의왕"
+  - name: "의정부"
+    code: "의정부"
+  - name: "이천"
+    code: "이천"
+  - name: "익산"
+    code: "익산"
+  - name: "인제"
+    code: "인제"
+  - name: "인제군기린면"
+    code: "인제군기린면"
+  - name: "인천"
+    code: "인천"
+  - name: "임실"
+    code: "임실"
+  - name: "장성"
+    code: "장성"
+  - name: "장수"
+    code: "장수"
+  - name: "장흥"
+    code: "장흥"
+  - name: "전주"
+    code: "전주"
+  - name: "정선"
+    code: "정선"
+  - name: "정읍"
+    code: "정읍"
+  - name: "제주"
+    code: "제주"
+  - name: "제주레"
+    code: "제주레"
+  - name: "제천"
+    code: "제천"
+  - name: "주문진"
+    code: "주문진"
+  - name: "진도"
+    code: "진도"
+  - name: "진안"
+    code: "진안"
+  - name: "진주"
+    code: "진주"
+  - name: "진천"
+    code: "진천"
+  - name: "창녕"
+    code: "창녕"
+  - name: "창원"
+    code: "창원"
+  - name: "천안"
+    code: "천안"
+  - name: "철원"
+    code: "철원"
+  - name: "청도"
+    code: "청도"
+  - name: "청송"
+    code: "청송"
+  - name: "청양"
+    code: "청양"
+  - name: "청주"
+    code: "청주"
+  - name: "청주공항"
+    code: "청주공항"
+  - name: "추자도"
+    code: "추자도"
+  - name: "추풍령"
+    code: "추풍령"
+  - name: "춘양"
+    code: "춘양"
+  - name: "춘천"
+    code: "춘천"
+  - name: "충주"
+    code: "충주"
+  - name: "칠곡"
+    code: "칠곡"
+  - name: "탐라KVN"
+    code: "탐라KVN"
+  - name: "태백"
+    code: "태백"
+  - name: "태안"
+    code: "태안"
+  - name: "통영"
+    code: "통영"
+  - name: "파주"
+    code: "파주"
+  - name: "평창"
+    code: "평창"
+  - name: "평창KVN"
+    code: "평창KVN"
+  - name: "평택"
+    code: "평택"
+  - name: "포천"
+    code: "포천"
+  - name: "포항"
+    code: "포항"
+  - name: "하남"
+    code: "하남"
+  - name: "하동"
+    code: "하동"
+  - name: "함안"
+    code: "함안"
+  - name: "함양"
+    code: "함양"
+  - name: "함평"
+    code: "함평"
+  - name: "합천"
+    code: "합천"
+  - name: "해남"
+    code: "해남"
+  - name: "홍성"
+    code: "홍성"
+  - name: "홍천"
+    code: "홍천"
+  - name: "홍천군내면"
+    code: "홍천군내면"
+  - name: "홍천군서석면"
+    code: "홍천군서석면"
+  - name: "화성"
+    code: "화성"
+  - name: "화순"
+    code: "화순"
+  - name: "화천"
+    code: "화천"
+  - name: "횡성"
+    code: "횡성"
+
+# 조석 예보(시계열) 관측소 코드
+# 참고: https://www.data.go.kr/data/15156022/openapi.do
+# 조석 예보(시계열) API에서 사용하는 관측소 코드
+# DT_ 코드: 주요 조석 관측소
+# SO_ 코드: 소규모 항구/섬 관측소
+# IE_ 코드: 특수 관측소
+tide_forecast_time_stations:
+  # DT_ 코드 (주요 관측소)
+  - name: "인천"
+    code: "DT_0001"
+    latitude: 37.4563
+    longitude: 126.6222
+    description: "인천항"
+  - name: "평택"
+    code: "DT_0002"
+    latitude: 36.9920
+    longitude: 126.9170
+    description: "평택항"
+  - name: "영광"
+    code: "DT_0003"
+    latitude: 35.2778
+    longitude: 126.5111
+    description: "영광"
+  - name: "제주"
+    code: "DT_0004"
+    latitude: 33.4996
+    longitude: 126.5312
+    description: "제주항"
+  - name: "부산"
+    code: "DT_0005"
+    latitude: 35.1047
+    longitude: 129.0322
+    description: "부산항"
+  - name: "묵호"
+    code: "DT_0006"
+    latitude: 37.5500
+    longitude: 129.1167
+    description: "묵호항"
+  - name: "목포"
+    code: "DT_0007"
+    latitude: 34.8117
+    longitude: 126.3922
+    description: "목포항"
+  - name: "안산"
+    code: "DT_0008"
+    latitude: 37.3222
+    longitude: 126.8306
+    description: "안산"
+  - name: "서귀포"
+    code: "DT_0010"
+    latitude: 33.2541
+    longitude: 126.5600
+    description: "서귀포항"
+  - name: "후포"
+    code: "DT_0011"
+    latitude: 36.6833
+    longitude: 129.4500
+    description: "후포항"
+  - name: "속초"
+    code: "DT_0012"
+    latitude: 38.2042
+    longitude: 128.5917
+    description: "속초항"
+  - name: "울릉도"
+    code: "DT_0013"
+    latitude: 37.4844
+    longitude: 130.9056
+    description: "울릉도"
+  - name: "통영"
+    code: "DT_0014"
+    latitude: 34.8500
+    longitude: 128.4333
+    description: "통영항"
+  - name: "여수"
+    code: "DT_0016"
+    latitude: 34.7604
+    longitude: 127.6622
+    description: "여수항"
+  - name: "대산"
+    code: "DT_0017"
+    latitude: 36.9333
+    longitude: 126.4167
+    description: "대산"
+  - name: "군산"
+    code: "DT_0018"
+    latitude: 35.9678
+    longitude: 126.7361
+    description: "군산항"
+  - name: "울산"
+    code: "DT_0020"
+    latitude: 35.5389
+    longitude: 129.3167
+    description: "울산항"
+  - name: "추자도"
+    code: "DT_0021"
+    latitude: 33.9500
+    longitude: 126.3167
+    description: "추자도"
+  - name: "성산포"
+    code: "DT_0022"
+    latitude: 33.4667
+    longitude: 126.9167
+    description: "성산포"
+  - name: "모슬포"
+    code: "DT_0023"
+    latitude: 33.2167
+    longitude: 126.2500
+    description: "모슬포"
+  - name: "장항"
+    code: "DT_0024"
+    latitude: 36.0167
+    longitude: 126.6833
+    description: "장항"
+  - name: "보령"
+    code: "DT_0025"
+    latitude: 36.3333
+    longitude: 126.5833
+    description: "보령"
+  - name: "고흥발포"
+    code: "DT_0026"
+    latitude: 34.6167
+    longitude: 127.3167
+    description: "고흥발포"
+  - name: "완도"
+    code: "DT_0027"
+    latitude: 34.3167
+    longitude: 126.7500
+    description: "완도"
+  - name: "진도"
+    code: "DT_0028"
+    latitude: 34.4833
+    longitude: 126.2667
+    description: "진도"
+  - name: "거제도"
+    code: "DT_0029"
+    latitude: 34.8833
+    longitude: 128.6833
+    description: "거제도"
+  - name: "거문도"
+    code: "DT_0031"
+    latitude: 34.0333
+    longitude: 127.3167
+    description: "거문도"
+  - name: "강화대교"
+    code: "DT_0032"
+    latitude: 37.7167
+    longitude: 126.4833
+    description: "강화대교"
+  - name: "흑산도"
+    code: "DT_0035"
+    latitude: 34.6833
+    longitude: 125.4167
+    description: "흑산도"
+  - name: "대청도"
+    code: "DT_0036"
+    latitude: 37.8333
+    longitude: 124.7167
+    description: "대청도"
+  - name: "어청도"
+    code: "DT_0037"
+    latitude: 36.1167
+    longitude: 125.9667
+    description: "어청도"
+  - name: "굴업도"
+    code: "DT_0038"
+    latitude: 37.1833
+    longitude: 126.1167
+    description: "굴업도"
+  - name: "왕돌초"
+    code: "DT_0039"
+    latitude: 37.2500
+    longitude: 126.4167
+    description: "왕돌초"
+  - name: "독도"
+    code: "DT_0040"
+    latitude: 37.2417
+    longitude: 131.8667
+    description: "독도"
+  - name: "복사초"
+    code: "DT_0041"
+    latitude: 37.2167
+    longitude: 126.3500
+    description: "복사초"
+  - name: "교본초"
+    code: "DT_0042"
+    latitude: 37.2000
+    longitude: 126.3333
+    description: "교본초"
+  - name: "영흥도"
+    code: "DT_0043"
+    latitude: 37.2667
+    longitude: 126.4833
+    description: "영흥도"
+  - name: "영종대교"
+    code: "DT_0044"
+    latitude: 37.4833
+    longitude: 126.5500
+    description: "영종대교"
+  - name: "쌍정초"
+    code: "DT_0046"
+    latitude: 37.1833
+    longitude: 126.3000
+    description: "쌍정초"
+  - name: "도농탄"
+    code: "DT_0047"
+    latitude: 37.1500
+    longitude: 126.2667
+    description: "도농탄"
+  - name: "속초등표"
+    code: "DT_0048"
+    latitude: 38.2167
+    longitude: 128.6000
+    description: "속초등표"
+  - name: "광양"
+    code: "DT_0049"
+    latitude: 34.9333
+    longitude: 127.7000
+    description: "광양"
+  - name: "태안"
+    code: "DT_0050"
+    latitude: 36.7500
+    longitude: 126.3000
+    description: "태안"
+  - name: "서천마량"
+    code: "DT_0051"
+    latitude: 36.0833
+    longitude: 126.6833
+    description: "서천마량"
+  - name: "인천송도"
+    code: "DT_0052"
+    latitude: 37.3833
+    longitude: 126.6500
+    description: "인천송도"
+  - name: "진해"
+    code: "DT_0054"
+    latitude: 35.1500
+    longitude: 128.6667
+    description: "진해"
+  - name: "부산항신항"
+    code: "DT_0056"
+    latitude: 35.0833
+    longitude: 129.0833
+    description: "부산항신항"
+  - name: "동해항"
+    code: "DT_0057"
+    latitude: 37.5167
+    longitude: 129.1167
+    description: "동해항"
+  - name: "경인항"
+    code: "DT_0058"
+    latitude: 37.4000
+    longitude: 126.6333
+    description: "경인항"
+  - name: "백령도"
+    code: "DT_0059"
+    latitude: 37.9667
+    longitude: 124.7167
+    description: "백령도"
+  - name: "연평도"
+    code: "DT_0060"
+    latitude: 37.6667
+    longitude: 125.7000
+    description: "연평도"
+  - name: "삼천포"
+    code: "DT_0061"
+    latitude: 34.9167
+    longitude: 128.0667
+    description: "삼천포"
+  - name: "마산"
+    code: "DT_0062"
+    latitude: 35.1833
+    longitude: 128.5667
+    description: "마산"
+  - name: "가덕도"
+    code: "DT_0063"
+    latitude: 35.0333
+    longitude: 128.8167
+    description: "가덕도"
+  - name: "교동대교"
+    code: "DT_0064"
+    latitude: 37.7667
+    longitude: 126.4833
+    description: "교동대교"
+  - name: "덕적도"
+    code: "DT_0065"
+    latitude: 37.2167
+    longitude: 126.1500
+    description: "덕적도"
+  - name: "안흥"
+    code: "DT_0067"
+    latitude: 36.5667
+    longitude: 126.3333
+    description: "안흥"
+  - name: "위도"
+    code: "DT_0068"
+    latitude: 35.6167
+    longitude: 126.3000
+    description: "위도"
+  - name: "포항"
+    code: "DT_0091"
+    latitude: 36.0322
+    longitude: 129.3650
+    description: "포항항"
+  - name: "여호항"
+    code: "DT_0092"
+    latitude: 34.7500
+    longitude: 127.7500
+    description: "여호항"
+  - name: "소무의도"
+    code: "DT_0093"
+    latitude: 37.7667
+    longitude: 126.4333
+    description: "소무의도"
+  - name: "서거차도"
+    code: "DT_0094"
+    latitude: 37.1833
+    longitude: 126.0833
+    description: "서거차도"
+  
+  # IE_ 코드 (특수 관측소)
+  - name: "이어도"
+    code: "IE_0060"
+    latitude: 32.1167
+    longitude: 125.1833
+    description: "이어도"
+  - name: "신안가거초"
+    code: "IE_0061"
+    latitude: 34.7167
+    longitude: 125.9167
+    description: "신안가거초"
+  - name: "옹진소청초"
+    code: "IE_0062"
+    latitude: 37.4167
+    longitude: 125.7167
+    description: "옹진소청초"
+  
+  # SO_ 코드 (소규모 항구/섬 관측소 - 주요 항구만 포함)
+  - name: "송공항"
+    code: "SO_0566"
+    latitude: 34.8500
+    longitude: 128.4167
+    description: "송공항"
+  - name: "쉬미항"
+    code: "SO_0567"
+    latitude: 34.8333
+    longitude: 128.4000
+    description: "쉬미항"
+  - name: "백야도"
+    code: "SO_0568"
+    latitude: 34.8167
+    longitude: 128.3833
+    description: "백야도"
+  - name: "남포항"
+    code: "SO_0569"
+    latitude: 34.8000
+    longitude: 128.3667
+    description: "남포항"
+  - name: "광암항"
+    code: "SO_0570"
+    latitude: 34.7833
+    longitude: 128.3500
+    description: "광암항"
+  - name: "거제외포"
+    code: "SO_0571"
+    latitude: 34.7667
+    longitude: 128.3333
+    description: "거제외포"
+  - name: "읍천항"
+    code: "SO_0572"
+    latitude: 34.7500
+    longitude: 128.3167
+    description: "읍천항"
+  - name: "양포항"
+    code: "SO_0573"
+    latitude: 34.7333
+    longitude: 128.3000
+    description: "양포항"
+  - name: "백사장항"
+    code: "SO_0574"
+    latitude: 34.7167
+    longitude: 128.2833
+    description: "백사장항"
+  - name: "화봉리"
+    code: "SO_0576"
+    latitude: 34.7000
+    longitude: 128.2667
+    description: "화봉리"
+  - name: "가거도"
+    code: "SO_0577"
+    latitude: 34.6833
+    longitude: 128.2500
+    description: "가거도"
+  - name: "소매물도"
+    code: "SO_0578"
+    latitude: 34.6667
+    longitude: 128.2333
+    description: "소매물도"
+  - name: "강양항"
+    code: "SO_0581"
+    latitude: 34.6500
+    longitude: 128.2167
+    description: "강양항"
+  - name: "암태도"
+    code: "SO_0631"
+    latitude: 34.6333
+    longitude: 128.2000
+    description: "암태도"
+  - name: "천리포항"
+    code: "SO_0699"
+    latitude: 36.7833
+    longitude: 126.1500
+    description: "천리포항"
+  - name: "호도"
+    code: "SO_0700"
+    latitude: 34.6167
+    longitude: 128.1833
+    description: "호도"
+  - name: "홍도항"
+    code: "SO_0701"
+    latitude: 34.6000
+    longitude: 128.1667
+    description: "홍도항"
+  - name: "진도옥도"
+    code: "SO_0702"
+    latitude: 34.5833
+    longitude: 128.1500
+    description: "진도옥도"
+  - name: "땅끝항"
+    code: "SO_0703"
+    latitude: 34.5667
+    longitude: 128.1333
+    description: "땅끝항"
+  - name: "소안항"
+    code: "SO_0704"
+    latitude: 34.5500
+    longitude: 128.1167
+    description: "소안항"
+  - name: "마량항"
+    code: "SO_0705"
+    latitude: 34.5333
+    longitude: 128.1000
+    description: "마량항"
+  - name: "청산도"
+    code: "SO_0706"
+    latitude: 34.5167
+    longitude: 128.0833
+    description: "청산도"
+  - name: "시산항"
+    code: "SO_0707"
+    latitude: 34.5000
+    longitude: 128.0667
+    description: "시산항"
+  - name: "안도항"
+    code: "SO_0708"
+    latitude: 34.4833
+    longitude: 128.0500
+    description: "안도항"
+  - name: "두문포"
+    code: "SO_0709"
+    latitude: 34.4667
+    longitude: 128.0333
+    description: "두문포"
+  - name: "봉우항"
+    code: "SO_0710"
+    latitude: 34.4500
+    longitude: 128.0167
+    description: "봉우항"
+  - name: "창선도"
+    code: "SO_0711"
+    latitude: 34.4333
+    longitude: 127.9833
+    description: "창선도"
+  - name: "미조항"
+    code: "SO_0326"
+    latitude: 38.3833
+    longitude: 128.4667
+    description: "미조항"
+  - name: "벽파진"
+    code: "SO_0537"
+    latitude: 36.7167
+    longitude: 126.3167
+    description: "벽파진"
+  - name: "안마도"
+    code: "SO_0538"
+    latitude: 34.4167
+    longitude: 127.9667
+    description: "안마도"
+  - name: "강화외포"
+    code: "SO_0539"
+    latitude: 37.7333
+    longitude: 126.4833
+    description: "강화외포"
+  - name: "호산항"
+    code: "SO_0540"
+    latitude: 34.4000
+    longitude: 127.9500
+    description: "호산항"
+  - name: "말도"
+    code: "SO_0547"
+    latitude: 34.3833
+    longitude: 127.9333
+    description: "말도"
+  - name: "우이도"
+    code: "SO_0548"
+    latitude: 34.3667
+    longitude: 127.9167
+    description: "우이도"
+  - name: "초도"
+    code: "SO_0549"
+    latitude: 34.3500
+    longitude: 127.9000
+    description: "초도"
+  - name: "나로도"
+    code: "SO_0550"
+    latitude: 34.3333
+    longitude: 127.8833
+    description: "나로도"
+  - name: "여서도"
+    code: "SO_0551"
+    latitude: 34.3167
+    longitude: 127.8667
+    description: "여서도"
+  - name: "고현항"
+    code: "SO_0552"
+    latitude: 34.8833
+    longitude: 128.6833
+    description: "고현항"
+  - name: "해운대"
+    code: "SO_0553"
+    latitude: 35.1667
+    longitude: 129.1667
+    description: "해운대"
+  - name: "영종왕산"
+    code: "SO_0554"
+    latitude: 37.4833
+    longitude: 126.5500
+    description: "영종왕산"
+  - name: "서망항"
+    code: "SO_0555"
+    latitude: 34.3000
+    longitude: 127.8500
+    description: "서망항"
+  - name: "승봉도"
+    code: "SO_0562"
+    latitude: 34.2833
+    longitude: 127.8333
+    description: "승봉도"
+  - name: "울도"
+    code: "SO_0563"
+    latitude: 34.2667
+    longitude: 127.8167
+    description: "울도"
+  - name: "국화도"
+    code: "SO_0564"
+    latitude: 34.2500
+    longitude: 127.8000
+    description: "국화도"
+  - name: "향화도항"
+    code: "SO_0565"
+    latitude: 34.2333
+    longitude: 127.7833
+    description: "향화도항"
+  - name: "능양항"
+    code: "SO_0712"
+    latitude: 34.2167
+    longitude: 127.7667
+    description: "능양항"
+  - name: "대진항"
+    code: "SO_0731"
+    latitude: 38.3500
+    longitude: 128.4833
+    description: "대진항"
+  - name: "남애항"
+    code: "SO_0732"
+    latitude: 38.3167
+    longitude: 128.5000
+    description: "남애항"
+  - name: "강릉항"
+    code: "SO_0733"
+    latitude: 37.7500
+    longitude: 128.8833
+    description: "강릉항"
+  - name: "궁촌항"
+    code: "SO_0734"
+    latitude: 37.7333
+    longitude: 128.8667
+    description: "궁촌항"
+  - name: "죽변항"
+    code: "SO_0735"
+    latitude: 37.0500
+    longitude: 129.4000
+    description: "죽변항"
+  - name: "축산항"
+    code: "SO_0736"
+    latitude: 37.0333
+    longitude: 129.3833
+    description: "축산항"
+  - name: "강구항"
+    code: "SO_0737"
+    latitude: 37.0167
+    longitude: 129.3667
+    description: "강구항"
+  - name: "도장항"
+    code: "SO_0739"
+    latitude: 37.0000
+    longitude: 129.3500
+    description: "도장항"
+  - name: "보옥항"
+    code: "SO_0740"
+    latitude: 36.9833
+    longitude: 129.3333
+    description: "보옥항"
+  - name: "검산항"
+    code: "SO_0752"
+    latitude: 36.9667
+    longitude: 129.3167
+    description: "검산항"
+  - name: "하의도웅곡"
+    code: "SO_0753"
+    latitude: 34.2000
+    longitude: 126.0500
+    description: "하의도웅곡"
+  - name: "평호리"
+    code: "SO_0754"
+    latitude: 34.1833
+    longitude: 126.0333
+    description: "평호리"
+  - name: "원동항"
+    code: "SO_0755"
+    latitude: 34.1667
+    longitude: 126.0167
+    description: "원동항"
+  - name: "사초항"
+    code: "SO_0756"
+    latitude: 34.1500
+    longitude: 125.9833
+    description: "사초항"
+  - name: "안남리"
+    code: "SO_0757"
+    latitude: 34.1333
+    longitude: 125.9667
+    description: "안남리"
+  - name: "달천도"
+    code: "SO_0758"
+    latitude: 34.1167
+    longitude: 125.9500
+    description: "달천도"
+  - name: "장문리"
+    code: "SO_0759"
+    latitude: 34.1000
+    longitude: 125.9333
+    description: "장문리"
+  - name: "오산항"
+    code: "SO_0760"
+    latitude: 34.0833
+    longitude: 125.9167
+    description: "오산항"
+  - name: "녹동항"
+    code: "SO_0761"
+    latitude: 34.0667
+    longitude: 125.9000
+    description: "녹동항"
+  - name: "신안옥도"
+    code: "SO_1248"
+    latitude: 34.0500
+    longitude: 125.8833
+    description: "신안옥도"
+  - name: "독거도"
+    code: "SO_1249"
+    latitude: 34.0333
+    longitude: 125.8667
+    description: "독거도"
+  - name: "평도"
+    code: "SO_1250"
+    latitude: 34.0167
+    longitude: 125.8500
+    description: "평도"
+  - name: "낙월도"
+    code: "SO_1251"
+    latitude: 34.0000
+    longitude: 125.8333
+    description: "낙월도"
+  - name: "외연도항"
+    code: "SO_1252"
+    latitude: 33.9833
+    longitude: 125.8167
+    description: "외연도항"
+  - name: "상왕등도"
+    code: "SO_1253"
+    latitude: 33.9667
+    longitude: 125.8000
+    description: "상왕등도"
+  - name: "만재도"
+    code: "SO_1254"
+    latitude: 33.9500
+    longitude: 125.7833
+    description: "만재도"
+  - name: "상태도"
+    code: "SO_1255"
+    latitude: 33.9333
+    longitude: 125.7667
+    description: "상태도"
+  - name: "어류정항"
+    code: "SO_1256"
+    latitude: 33.9167
+    longitude: 125.7500
+    description: "어류정항"
+  - name: "강화하리"
+    code: "SO_1257"
+    latitude: 37.7167
+    longitude: 126.4833
+    description: "강화하리"
+  - name: "잠진도"
+    code: "SO_1258"
+    latitude: 33.9000
+    longitude: 125.7333
+    description: "잠진도"
+  - name: "자월도"
+    code: "SO_1259"
+    latitude: 33.8833
+    longitude: 125.7167
+    description: "자월도"
+  - name: "방포항"
+    code: "SO_1260"
+    latitude: 33.8667
+    longitude: 125.7000
+    description: "방포항"
+  - name: "무창포항"
+    code: "SO_1261"
+    latitude: 33.8500
+    longitude: 125.6833
+    description: "무창포항"
+  - name: "격포항"
+    code: "SO_1262"
+    latitude: 33.8333
+    longitude: 125.6667
+    description: "격포항"
+  - name: "구시포항"
+    code: "SO_1263"
+    latitude: 33.8167
+    longitude: 125.6500
+    description: "구시포항"
+  - name: "계마항"
+    code: "SO_1264"
+    latitude: 33.8000
+    longitude: 125.6333
+    description: "계마항"
+  - name: "송이도"
+    code: "SO_1265"
+    latitude: 33.7833
+    longitude: 125.6167
+    description: "송이도"
+  - name: "남열항"
+    code: "SO_1266"
+    latitude: 33.7667
+    longitude: 125.6000
+    description: "남열항"
+  - name: "구룡포항"
+    code: "SO_1267"
+    latitude: 36.9500
+    longitude: 129.3000
+    description: "구룡포항"
+  - name: "궁평항"
+    code: "SO_1268"
+    latitude: 33.7500
+    longitude: 125.5833
+    description: "궁평항"
+  - name: "연도항"
+    code: "SO_1269"
+    latitude: 33.7333
+    longitude: 125.5667
+    description: "연도항"
+  - name: "삼길포항"
+    code: "SO_1270"
+    latitude: 33.7167
+    longitude: 125.5500
+    description: "삼길포항"
+  - name: "어은돌항"
+    code: "SO_1271"
+    latitude: 33.7000
+    longitude: 125.5333
+    description: "어은돌항"
+  - name: "다대포항"
+    code: "SO_1272"
+    latitude: 35.0500
+    longitude: 129.0167
+    description: "다대포항"
+  - name: "장호항"
+    code: "SO_1273"
+    latitude: 33.6833
+    longitude: 125.5167
+    description: "장호항"
+  - name: "거진항"
+    code: "SO_1274"
+    latitude: 38.4333
+    longitude: 128.4500
+    description: "거진항"
+  - name: "공현진항"
+    code: "SO_1275"
+    latitude: 33.6667
+    longitude: 125.5000
+    description: "공현진항"
+  - name: "아야진항"
+    code: "SO_1276"
+    latitude: 33.6500
+    longitude: 125.4833
+    description: "아야진항"
+  - name: "화순항"
+    code: "SO_1277"
+    latitude: 33.6333
+    longitude: 125.4667
+    description: "화순항"
+  - name: "원평항"
+    code: "SO_1278"
+    latitude: 33.6167
+    longitude: 125.4500
+    description: "원평항"
+  - name: "어란진항"
+    code: "SO_1279"
+    latitude: 33.6000
+    longitude: 125.4333
+    description: "어란진항"
+  - name: "덕산항"
+    code: "SO_1280"
+    latitude: 33.5833
+    longitude: 125.4167
+    description: "덕산항"
+  - name: "임원항"
+    code: "SO_1281"
+    latitude: 33.5667
+    longitude: 125.4000
+    description: "임원항"
+  - name: "선재도"
+    code: "SO_1282"
+    latitude: 37.7667
+    longitude: 126.4333
+    description: "선재도"
+  - name: "사천진항"
+    code: "SO_1283"
+    latitude: 34.9167
+    longitude: 128.0667
+    description: "사천진항"
+
+# 조석 예측 정보(실예측정보) 관측소 코드
+# 참고: https://www.data.go.kr/data/15142507/openapi.do
+# 조석 예측 정보 API에서 사용하는 관측소 코드
+# 과거 데이터 조회용
+tide_survey_stations:
+  # DT_ 코드 (주요 관측소)
+  - name: "인천"
+    code: "DT_0001"
+    latitude: 37.4563
+    longitude: 126.6222
+    description: "인천항"
+  - name: "평택"
+    code: "DT_0002"
+    latitude: 36.9920
+    longitude: 126.9170
+    description: "평택항"
+  - name: "영광"
+    code: "DT_0003"
+    latitude: 35.2778
+    longitude: 126.5111
+    description: "영광"
+  - name: "제주"
+    code: "DT_0004"
+    latitude: 33.4996
+    longitude: 126.5312
+    description: "제주항"
+  - name: "부산"
+    code: "DT_0005"
+    latitude: 35.1047
+    longitude: 129.0322
+    description: "부산항"
+  - name: "묵호"
+    code: "DT_0006"
+    latitude: 37.5500
+    longitude: 129.1167
+    description: "묵호항"
+  - name: "목포"
+    code: "DT_0007"
+    latitude: 34.8117
+    longitude: 126.3922
+    description: "목포항"
+  - name: "안산"
+    code: "DT_0008"
+    latitude: 37.3222
+    longitude: 126.8306
+    description: "안산"
+  - name: "서귀포"
+    code: "DT_0010"
+    latitude: 33.2541
+    longitude: 126.5600
+    description: "서귀포항"
+  - name: "후포"
+    code: "DT_0011"
+    latitude: 36.6833
+    longitude: 129.4500
+    description: "후포항"
+  - name: "속초"
+    code: "DT_0012"
+    latitude: 38.2042
+    longitude: 128.5917
+    description: "속초항"
+  - name: "울릉도"
+    code: "DT_0013"
+    latitude: 37.4844
+    longitude: 130.9056
+    description: "울릉도"
+  - name: "통영"
+    code: "DT_0014"
+    latitude: 34.8500
+    longitude: 128.4333
+    description: "통영항"
+  - name: "여수"
+    code: "DT_0016"
+    latitude: 34.7604
+    longitude: 127.6622
+    description: "여수항"
+  - name: "대산"
+    code: "DT_0017"
+    latitude: 36.9333
+    longitude: 126.4167
+    description: "대산"
+  - name: "군산"
+    code: "DT_0018"
+    latitude: 35.9678
+    longitude: 126.7361
+    description: "군산항"
+  - name: "울산"
+    code: "DT_0020"
+    latitude: 35.5389
+    longitude: 129.3167
+    description: "울산항"
+  - name: "추자도"
+    code: "DT_0021"
+    latitude: 33.9500
+    longitude: 126.3167
+    description: "추자도"
+  - name: "성산포"
+    code: "DT_0022"
+    latitude: 33.4667
+    longitude: 126.9167
+    description: "성산포"
+  - name: "모슬포"
+    code: "DT_0023"
+    latitude: 33.2167
+    longitude: 126.2500
+    description: "모슬포"
+  - name: "장항"
+    code: "DT_0024"
+    latitude: 36.0167
+    longitude: 126.6833
+    description: "장항"
+  - name: "보령"
+    code: "DT_0025"
+    latitude: 36.3333
+    longitude: 126.5833
+    description: "보령"
+  - name: "고흥발포"
+    code: "DT_0026"
+    latitude: 34.6167
+    longitude: 127.3167
+    description: "고흥발포"
+  - name: "완도"
+    code: "DT_0027"
+    latitude: 34.3167
+    longitude: 126.7500
+    description: "완도"
+  - name: "진도"
+    code: "DT_0028"
+    latitude: 34.4833
+    longitude: 126.2667
+    description: "진도"
+  - name: "거제도"
+    code: "DT_0029"
+    latitude: 34.8833
+    longitude: 128.6833
+    description: "거제도"
+  - name: "거문도"
+    code: "DT_0031"
+    latitude: 34.0333
+    longitude: 127.3167
+    description: "거문도"
+  - name: "강화대교"
+    code: "DT_0032"
+    latitude: 37.7167
+    longitude: 126.4833
+    description: "강화대교"
+  - name: "흑산도"
+    code: "DT_0035"
+    latitude: 34.6833
+    longitude: 125.4167
+    description: "흑산도"
+  - name: "대청도"
+    code: "DT_0036"
+    latitude: 37.8333
+    longitude: 124.7167
+    description: "대청도"
+  - name: "어청도"
+    code: "DT_0037"
+    latitude: 36.1167
+    longitude: 125.9667
+    description: "어청도"
+  - name: "굴업도"
+    code: "DT_0038"
+    latitude: 37.1833
+    longitude: 126.1167
+    description: "굴업도"
+  - name: "왕돌초"
+    code: "DT_0039"
+    latitude: 37.2500
+    longitude: 126.4167
+    description: "왕돌초"
+  - name: "독도"
+    code: "DT_0040"
+    latitude: 37.2417
+    longitude: 131.8667
+    description: "독도"
+  - name: "복사초"
+    code: "DT_0041"
+    latitude: 37.2167
+    longitude: 126.3500
+    description: "복사초"
+  - name: "교본초"
+    code: "DT_0042"
+    latitude: 37.2000
+    longitude: 126.3333
+    description: "교본초"
+  - name: "영흥도"
+    code: "DT_0043"
+    latitude: 37.2667
+    longitude: 126.4833
+    description: "영흥도"
+  - name: "영종대교"
+    code: "DT_0044"
+    latitude: 37.4833
+    longitude: 126.5500
+    description: "영종대교"
+  - name: "쌍정초"
+    code: "DT_0046"
+    latitude: 37.1833
+    longitude: 126.3000
+    description: "쌍정초"
+  - name: "도농탄"
+    code: "DT_0047"
+    latitude: 37.1500
+    longitude: 126.2667
+    description: "도농탄"
+  - name: "속초등표"
+    code: "DT_0048"
+    latitude: 38.2167
+    longitude: 128.6000
+    description: "속초등표"
+  - name: "광양"
+    code: "DT_0049"
+    latitude: 34.9333
+    longitude: 127.7000
+    description: "광양"
+  - name: "태안"
+    code: "DT_0050"
+    latitude: 36.7500
+    longitude: 126.3000
+    description: "태안"
+  - name: "서천마량"
+    code: "DT_0051"
+    latitude: 36.0833
+    longitude: 126.6833
+    description: "서천마량"
+  - name: "인천송도"
+    code: "DT_0052"
+    latitude: 37.3833
+    longitude: 126.6500
+    description: "인천송도"
+  - name: "진해"
+    code: "DT_0054"
+    latitude: 35.1500
+    longitude: 128.6667
+    description: "진해"
+  - name: "부산항신항"
+    code: "DT_0056"
+    latitude: 35.0833
+    longitude: 129.0833
+    description: "부산항신항"
+  - name: "동해항"
+    code: "DT_0057"
+    latitude: 37.5167
+    longitude: 129.1167
+    description: "동해항"
+  - name: "경인항"
+    code: "DT_0058"
+    latitude: 37.4000
+    longitude: 126.6333
+    description: "경인항"
+  - name: "백령도"
+    code: "DT_0059"
+    latitude: 37.9667
+    longitude: 124.7167
+    description: "백령도"
+  - name: "연평도"
+    code: "DT_0060"
+    latitude: 37.6667
+    longitude: 125.7000
+    description: "연평도"
+  - name: "삼천포"
+    code: "DT_0061"
+    latitude: 34.9167
+    longitude: 128.0667
+    description: "삼천포"
+  - name: "마산"
+    code: "DT_0062"
+    latitude: 35.1833
+    longitude: 128.5667
+    description: "마산"
+  - name: "가덕도"
+    code: "DT_0063"
+    latitude: 35.0333
+    longitude: 128.8167
+    description: "가덕도"
+  - name: "교동대교"
+    code: "DT_0064"
+    latitude: 37.7667
+    longitude: 126.4833
+    description: "교동대교"
+  - name: "덕적도"
+    code: "DT_0065"
+    latitude: 37.2167
+    longitude: 126.1500
+    description: "덕적도"
+  - name: "안흥"
+    code: "DT_0067"
+    latitude: 36.5667
+    longitude: 126.3333
+    description: "안흥"
+  - name: "위도"
+    code: "DT_0068"
+    latitude: 35.6167
+    longitude: 126.3000
+    description: "위도"
+  - name: "포항"
+    code: "DT_0091"
+    latitude: 36.0322
+    longitude: 129.3650
+    description: "포항항"
+  - name: "여호항"
+    code: "DT_0092"
+    latitude: 34.7500
+    longitude: 127.7500
+    description: "여호항"
+  - name: "소무의도"
+    code: "DT_0093"
+    latitude: 37.7667
+    longitude: 126.4333
+    description: "소무의도"
+  - name: "서거차도"
+    code: "DT_0094"
+    latitude: 37.1833
+    longitude: 126.0833
+    description: "서거차도"
+  - name: "포항시청_냉천항만교(수위)"
+    code: "DT_0902"
+    latitude: 36.0322
+    longitude: 129.3650
+    description: "포항시청 냉천항만교 수위"
+  
+  # IE_ 코드 (특수 관측소)
+  - name: "이어도"
+    code: "IE_0060"
+    latitude: 32.1167
+    longitude: 125.1833
+    description: "이어도"
+  - name: "신안가거초"
+    code: "IE_0061"
+    latitude: 34.7167
+    longitude: 125.9167
+    description: "신안가거초"
+  - name: "옹진소청초"
+    code: "IE_0062"
+    latitude: 37.4167
+    longitude: 125.7167
+    description: "옹진소청초"
+
+# 주요 도시 좌표 (기상청 API용)
+# 위경도는 기상청 격자 좌표로 자동 변환됩니다.
+major_cities:
+  - name: "서울"
+    latitude: 37.5665
+    longitude: 126.9780
+    sun_moon_location: "서울"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "서울특별시"
+  - name: "부산"
+    latitude: 35.1796
+    longitude: 129.0756
+    sun_moon_location: "부산"
+    tide_station_code: "DT_0004"
+    description: "부산광역시"
+  - name: "대구"
+    latitude: 35.8714
+    longitude: 128.6014
+    sun_moon_location: "대구"
+    tide_station_code: "DT_0005"  # 포항 (가장 가까운 관측소)
+    description: "대구광역시"
+  - name: "인천"
+    latitude: 37.4563
+    longitude: 126.7052
+    sun_moon_location: "인천"
+    tide_station_code: "DT_0001"
+    description: "인천광역시"
+  - name: "광주"
+    latitude: 35.1595
+    longitude: 126.8526
+    sun_moon_location: "광주"
+    tide_station_code: "DT_0002"  # 목포 (가장 가까운 관측소)
+    description: "광주광역시"
+  - name: "대전"
+    latitude: 36.3504
+    longitude: 127.3845
+    sun_moon_location: "대전"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "대전광역시"
+  - name: "울산"
+    latitude: 35.5389
+    longitude: 129.3167
+    sun_moon_location: "울산"
+    tide_station_code: "DT_0006"
+    description: "울산광역시"
+  - name: "세종"
+    latitude: 36.4800
+    longitude: 127.2890
+    sun_moon_location: "세종"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "세종특별자치시"
+  - name: "수원"
+    latitude: 37.2636
+    longitude: 127.0286
+    sun_moon_location: "수원"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "수원시"
+  - name: "성남"
+    latitude: 37.4201
+    longitude: 127.1267
+    sun_moon_location: "성남"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "성남시"
+  - name: "고양"
+    latitude: 37.6584
+    longitude: 126.8320
+    sun_moon_location: "고양"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "고양시"
+  - name: "용인"
+    latitude: 37.2411
+    longitude: 127.1776
+    sun_moon_location: "용인"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "용인시"
+  - name: "청주"
+    latitude: 36.6424
+    longitude: 127.4890
+    sun_moon_location: "청주"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "청주시"
+  - name: "천안"
+    latitude: 36.8151
+    longitude: 127.1139
+    sun_moon_location: "천안"
+    tide_station_code: "DT_0001"  # 인천 (가장 가까운 관측소)
+    description: "천안시"
+  - name: "전주"
+    latitude: 35.8242
+    longitude: 127.1480
+    sun_moon_location: "전주"
+    tide_station_code: "DT_0002"  # 목포 (가장 가까운 관측소)
+    description: "전주시"
+  - name: "포항"
+    latitude: 36.0322
+    longitude: 129.3650
+    sun_moon_location: "포항"
+    tide_station_code: "DT_0005"
+    description: "포항시"
+  - name: "제주"
+    latitude: 33.4996
+    longitude: 126.5312
+    sun_moon_location: "제주"
+    tide_station_code: "DT_0013"
+    description: "제주시"
+  - name: "서귀포"
+    latitude: 33.2541
+    longitude: 126.5600
+    sun_moon_location: "서귀포"
+    tide_station_code: "DT_0014"
+    description: "서귀포시"
+  - name: "여수"
+    latitude: 34.7604
+    longitude: 127.6622
+    sun_moon_location: "여수"
+    tide_station_code: "DT_0003"
+    description: "여수시"
+  - name: "통영"
+    latitude: 34.8500
+    longitude: 128.4333
+    sun_moon_location: "통영"
+    tide_station_code: "DT_0010"
+    description: "통영시"
+  - name: "거제"
+    latitude: 34.8833
+    longitude: 128.6833
+    sun_moon_location: "거제"
+    tide_station_code: "DT_0011"
+    description: "거제시"
+  - name: "속초"
+    latitude: 38.2042
+    longitude: 128.5917
+    sun_moon_location: "속초"
+    tide_station_code: "DT_0007"
+    description: "속초시"
+  - name: "목포"
+    latitude: 34.8117
+    longitude: 126.3922
+    sun_moon_location: "목포"
+    tide_station_code: "DT_0002"
+    description: "목포시"
+  - name: "완도"
+    latitude: 34.3167
+    longitude: 126.7500
+    sun_moon_location: "완도"
+    tide_station_code: "DT_0012"
+    description: "완도군"
+
+
+# 기본 설정
+default:
+  location: "서울"
+  latitude: 37.5665
+  longitude: 126.9780
+  sun_moon_location: "서울"
+  tide_station_code: "DT_0001"

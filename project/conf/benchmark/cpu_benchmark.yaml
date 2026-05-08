@@ -1,0 +1,12 @@
+# project/conf/benchmark/cpu_benchmark.yaml
+hardware:
+  cpu_cores: 16
+  gpu_enabled: false
+  num_threads: 16   # torch.set_num_threads 값
+
+measurements:
+  warmup_runs: 3
+  measure_runs: 20
+  batch_sizes: [1, 8, 16, 32]
+
+latency_percentiles: [50, 95]

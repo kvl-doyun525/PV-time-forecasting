@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# DLinear: pred_len × seed 전부 학습 후 seed 집계 + 리더보드 갱신
+# 사용: project/ 에서  bash scripts/run_dlinear.sh
+# 환경: RUNS_GROUP=dlinear_seq_168 (기본), SEQ_LEN=168, MART=artifacts/feature_mart_per_site
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+mkdir -p logs
+
+COMPOSE=(docker compose -f docker/docker-compose.yml)
+RUNS_GROUP="${RUNS_GROUP:-dlinear_seq_168}"
+SEQ_LEN="${SEQ_LEN:-168}"
+MART="${FEATURE_MART:-artifacts/feature_mart_per_site}"
+NUM_WORKERS="${NUM_WORKERS:-4}"
+LOG_BATCH_EVERY="${LOG_BATCH_EVERY:-0}"
+BATCH_SIZE="${BATCH_SIZE:-256}"
+OUT_BASE="artifacts/training_runs/${RUNS_GROUP}"
+SEEDS=(42)
+HORIZONS=(24 48 72)
+
+train_one() {
+  local h="$1" seed="$2" out_rel="$3"
+  local out_dir="${OUT_BASE}/${out_rel}"
+  echo "=== DLinear pred_len=${h} seed=${seed} → ${out_dir} ==="
+  "${COMPOSE[@]}" run --rm unified \
+    python src/train/train_tslib_model.py \
+      --model DLinear \
+      --feature-mart "${MART}" \
+      --seq-len "${SEQ_LEN}" \
+      --batch-size "${BATCH_SIZE}" \
+      --pred-len "${h}" \
+      --seed "${seed}" \
+      --num-workers "${NUM_WORKERS}" \
+      --log-batch-every "${LOG_BATCH_EVERY}" \
+      --output-dir "${out_dir}"
+}
+
+for S in "${SEEDS[@]}"; do
+  train_one 24 "${S}" "seed_${S}"
+done
+for H in 48 72; do
+  for S in "${SEEDS[@]}"; do
+    train_one "${H}" "${S}" "h${H}_seed_${S}"
+  done
+done
+
+echo "=== DLinear 전체 완료, 집계 중 ==="
+python3 src/report/aggregate_seeds.py \
+  --model dlinear \
+  --runs-dir artifacts/training_runs \
+  --runs-group "${RUNS_GROUP}" \
+  --horizons 24 48 72
+
+echo "=== 리더보드 갱신 ==="
+python3 src/report/build_leaderboard.py \
+  --runs-dir artifacts/training_runs \
+  --output artifacts/leaderboard.md
+
+echo "완료."
