@@ -9,8 +9,9 @@
   `run_*_future_nwp.sh` 는 기본 **`artifacts/feature_mart_track_b_per_site`** (`fcst_*` fan 필요).
 - **실험 그룹 폴더**: `RUNS_GROUP` 환경변수 (예: `dlinear_seq_168`, `segrnn_seq_168`). 미설정 시 각 스크립트 기본값 사용.
 - **배치**: `BATCH_SIZE` (기본: DLinear/SegRNN/PatchTST·해당 future_nwp 는 `256`, TimeLLM·`run_timellm*_future_nwp.sh` 는 `32`). `BATCH_SIZE=128 bash scripts/run_dlinear.sh` 처럼 환경변수로 덮어쓴다.
+- **train 윈도 슬라이스(행)**: `TRAIN_WINDOW_STRIDE` (기본 `24` → `train_tslib_model.py --train-window-stride`). 첫 자정 앵커 끄기: `NO_MIDNIGHT_WINDOW_ALIGN=1` → `--no-midnight-window-align` 전달.
 - **이미 학습된 런 건너뛰기**: 기본적으로 `--output-dir` 아래에 `metrics_test_<pred_len>h.json` 이 있으면 해당 조합은 스킵한다. 강제 재학습은 `SKIP_IF_DONE=0 bash scripts/run_dlinear_future_nwp.sh` .
-- **윈도우 stride (`train_tslib_model.py`)**: 마트가 1시간 간격이면 `train` 기본은 **24행(24시간)** 간격(`--train-window-stride`, 기본 24), `valid` 는 **`pred_len` 행** 간격(예: 24h 예측이면 24시간 간격). 예전처럼 매 시각 학습 샘플을 쓰려면 `--train-window-stride 1` .
+- **윈도우 stride·자정 앵커 (`pv_dataset`)**: 기본은 **가능한 가장 이른 00:00에 시작하는 첫 윈도만** 자정에 맞추고, 그 다음은 **`--train-window-stride`(행)** 간격으로만 이동한다(stride=24·48이면 1시간 마트에서 이후 시작도 자정에 맞춰짐). stride=1·12이면 첫만 자정·이후는 매시간 또는 12시간 간격. 전부 행 0 기준이면 `--no-midnight-window-align` . `valid`·테스트 예측은 `pred_len` 행 간격 + 동일 자정 앵커.
 - **배치 진행 로그**: `LOG_BATCH_EVERY` (기본 `0` = 비활성). 예: `LOG_BATCH_EVERY=50` 이면 50 배치마다 train/valid step 출력 (`--log-batch-every`).
 - **로그**: `mkdir -p logs` 후 `2>&1 | tee logs/run_xxx.log` 권장.
 
@@ -72,7 +73,7 @@ BATCH_SIZE=128 NUM_WORKERS=8 bash scripts/run_train.sh
 ## Python 집계·리더보드 (`src/report/`)
 
 - `python3 src/report/aggregate_seeds.py --model segrnn --runs-dir artifacts/training_runs --runs-group segrnn_seq_168 --horizons 24 48 72`
-- `python3 src/report/build_leaderboard.py --runs-dir artifacts/training_runs --output artifacts/leaderboard.md`
+- `python3 src/report/build_leaderboard.py --runs-dir artifacts/training_runs --output artifacts/leaderboard.md` — horizon별 표, `h{H}_seed{N}` vs `h{H}_seed_{N}` 폴더 쌍 비교 표, Raw 절. `--max-raw-per-horizon` 기본 80.
 - 원시 metrics만 표로: `python3 src/report/build_accuracy_leaderboard.py`
 
 ## 설계 메모 (SegRNN)

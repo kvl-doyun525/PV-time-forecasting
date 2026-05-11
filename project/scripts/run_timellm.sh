@@ -17,9 +17,16 @@ MART="${FEATURE_MART:-artifacts/feature_mart_per_site}"
 NUM_WORKERS="${NUM_WORKERS:-4}"
 LOG_BATCH_EVERY="${LOG_BATCH_EVERY:-0}"
 BATCH_SIZE="${BATCH_SIZE:-4}"
+TRAIN_WINDOW_STRIDE="${TRAIN_WINDOW_STRIDE:-24}"
+NO_MIDNIGHT_WINDOW_ALIGN="${NO_MIDNIGHT_WINDOW_ALIGN:-0}"
 OUT_BASE="artifacts/training_runs/${RUNS_GROUP}"
 SEEDS=(42)
 HORIZONS=(24 48 72)
+
+EXTRA_TRAIN_ARGS=()
+if [[ "${NO_MIDNIGHT_WINDOW_ALIGN}" == "1" ]]; then
+  EXTRA_TRAIN_ARGS+=(--no-midnight-window-align)
+fi
 
 for H in "${HORIZONS[@]}"; do
   for S in "${SEEDS[@]}"; do
@@ -41,6 +48,8 @@ for H in "${HORIZONS[@]}"; do
         --llm-layers 6 \
         --num-workers "${NUM_WORKERS}" \
         --log-batch-every "${LOG_BATCH_EVERY}" \
+        --train-window-stride "${TRAIN_WINDOW_STRIDE}" \
+        "${EXTRA_TRAIN_ARGS[@]}" \
         --output-dir "${out_dir}"
   done
 done

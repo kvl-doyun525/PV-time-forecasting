@@ -203,6 +203,7 @@ def generate_predictions(
     merge_future_nwp_into_encoder_input: bool = False,
     future_nwp_variable_names: tuple[str, ...] | None = None,
     as_float32: bool = False,
+    align_window_start_to_midnight: bool = True,
 ) -> list[dict]:
     import glob
 
@@ -218,6 +219,7 @@ def generate_predictions(
             pred_len=pred_len,
             merge_future_nwp_into_encoder_input=merge_future_nwp_into_encoder_input,
             future_nwp_variable_names=future_nwp_variable_names,
+            align_window_start_to_midnight=align_window_start_to_midnight,
         )
         if len(starts) == 0:
             continue
@@ -258,8 +260,11 @@ def main() -> None:
         default=24,
         metavar="ROWS",
         help=(
-            "train split 윈도우 시작 간격(행). 마트가 1시간 해상도면 24=24시간마다 한 윈도우. "
-            "valid 는 항상 pred_len 간격(--pred-len 행)과 동일."
+            "train 윈도 시작 간격(행). 자정 정렬 ON이면 **가장 이른 자정(00:00)에서 시작하는 첫 윈도**를 잡은 뒤, "
+            "i0, i0+stride, i0+2*stride … 만 사용(이후 시작 시각은 stride에 따라 자정이 아닐 수 있음). "
+            "stride=24·1시간 마트면 이후 시작도 자정에 맞춰짐. "
+            "행 0부터 stride만 쓰려면 `--no-midnight-window-align` . "
+            "valid·test 슬라이스도 동일 규칙(시작 간격은 pred_len). "
         ),
     )
     parser.add_argument("--batch-size", type=int, default=256)
@@ -302,8 +307,14 @@ def main() -> None:
         metavar="N",
         help="N 배치마다 train/valid step 로그 출력 (0이면 비활성)",
     )
+    parser.add_argument(
+        "--no-midnight-window-align",
+        action="store_true",
+        help="첫 윈도만 자정(00:00)에 맞추는 동작 끔(윈도 시작 i=0,stride,2*stride…).",
+    )
     args = parser.parse_args()
 
+    align_midnight = not args.no_midnight_window_align
     merge_nwp = args.merge_future_nwp_into_encoder_input
     future_nwp_names = tuple(
         p.strip() for p in args.future_nwp_variable_names.split(",") if p.strip()
@@ -321,7 +332,8 @@ def main() -> None:
     print(f"[train] context_len(L)={args.seq_len}, pred_len(H)={args.pred_len}")
     print(
         f"[train] window_stride(rows): train={args.train_window_stride}, "
-        f"valid={args.pred_len} (non-overlap valid steps)"
+        f"valid={args.pred_len} (non-overlap valid steps); "
+        f"start_align_midnight={align_midnight} (첫 윈도만 00:00 앵커)"
     )
     if merge_nwp:
         print(
@@ -349,6 +361,7 @@ def main() -> None:
         seq_len=args.seq_len,
         pred_len=args.pred_len,
         stride=args.train_window_stride,
+        align_window_start_to_midnight=align_midnight,
         **ds_kw,
     )
     valid_ds = build_multisite_dataset(
@@ -357,6 +370,7 @@ def main() -> None:
         seq_len=args.seq_len,
         pred_len=args.pred_len,
         stride=args.pred_len,
+        align_window_start_to_midnight=align_midnight,
         **ds_kw,
     )
 
@@ -459,6 +473,7 @@ def main() -> None:
         merge_future_nwp_into_encoder_input=merge_nwp,
         future_nwp_variable_names=future_nwp_names if merge_nwp else None,
         as_float32=(args.model == "TimeLLM"),
+        align_window_start_to_midnight=align_midnight,
     )
 
     if rows:

@@ -20,9 +20,16 @@ NWP_VARS="${FUTURE_NWP_VARS:-tmp,reh,wsd,vec,sky,pcp}"
 NUM_WORKERS="${NUM_WORKERS:-12}"
 LOG_BATCH_EVERY="${LOG_BATCH_EVERY:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-512}"
+TRAIN_WINDOW_STRIDE="${TRAIN_WINDOW_STRIDE:-24}"
+NO_MIDNIGHT_WINDOW_ALIGN="${NO_MIDNIGHT_WINDOW_ALIGN:-0}"
 OUT_BASE="artifacts/training_runs/${RUNS_GROUP}"
 SEEDS=(42)
 HORIZONS=(24 48 72)
+
+EXTRA_TRAIN_ARGS=()
+if [[ "${NO_MIDNIGHT_WINDOW_ALIGN}" == "1" ]]; then
+  EXTRA_TRAIN_ARGS+=(--no-midnight-window-align)
+fi
 
 train_one() {
   local h="$1" seed="$2" out_rel="$3"
@@ -44,6 +51,8 @@ train_one() {
       --future-nwp-variable-names "${NWP_VARS}" \
       --num-workers "${NUM_WORKERS}" \
       --log-batch-every "${LOG_BATCH_EVERY}" \
+      --train-window-stride "${TRAIN_WINDOW_STRIDE}" \
+      "${EXTRA_TRAIN_ARGS[@]}" \
       --output-dir "${out_dir}"
 }
 

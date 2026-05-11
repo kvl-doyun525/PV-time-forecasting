@@ -3,6 +3,9 @@ PV wide mart용 Dataset (단일 site parquet).
 
 `scan_fcst_parquet_health.py`의 FEATURE_COLS와 동기화 유지.
 복구: recup_dir.7/f567300984.h, track_b_mart_layout 문서 §2.6.7.
+
+윈도 시작은 기본적으로 **첫 윈도만** 인덱스 시각 **자정(00:00:00)** 에 맞추고,
+이후 윈도는 `stride`(행 간격)만큼만 건너뛴다(매 시작이 자정일 필요 없음).
 """
 from __future__ import annotations
 
@@ -38,6 +41,42 @@ FUTURE_NWP_TO_FEATURE_COL_INDEX: dict[str, int] = {
 }
 
 
+def _ts_is_midnight(ts: pd.Timestamp) -> bool:
+    """윈도 첫 행(과거 구간 시작)이 달력 자정인지 (인덱스 타임존 기준)."""
+    if not isinstance(ts, pd.Timestamp):
+        ts = pd.Timestamp(ts)
+    return (
+        int(ts.hour) == 0
+        and int(ts.minute) == 0
+        and int(ts.second) == 0
+        and int(ts.microsecond) == 0
+        and int(getattr(ts, "nanosecond", 0) or 0) == 0
+    )
+
+
+def _window_start_indices(
+    index: pd.DatetimeIndex,
+    *,
+    need: int,
+    stride: int,
+    align_midnight: bool,
+) -> list[int]:
+    n = len(index)
+    if n < need:
+        return []
+    stride = max(1, int(stride))
+    if not align_midnight:
+        return list(range(0, n - need + 1, stride))
+    i0 = None
+    for i in range(0, n - need + 1):
+        if _ts_is_midnight(index[i]):
+            i0 = i
+            break
+    if i0 is None:
+        return []
+    return list(range(i0, n - need + 1, stride))
+
+
 def encoder_input_channel_count(
     *,
     merge_future_nwp_into_encoder_input: bool = False,
@@ -56,11 +95,13 @@ class SingleSiteDataset(Dataset):
         *,
         merge_future_nwp_into_encoder_input: bool = False,
         future_nwp_variable_names: Optional[tuple[str, ...]] = None,
+        align_window_start_to_midnight: bool = True,
     ) -> None:
         self.seq_len = int(seq_len)
         self.pred_len = int(pred_len)
         self.stride = int(stride)
         self.merge = bool(merge_future_nwp_into_encoder_input)
+        self.align_midnight = bool(align_window_start_to_midnight)
         self.future_names: tuple[str, ...] = future_nwp_variable_names or (
             "tmp",
             "reh",
@@ -83,7 +124,12 @@ class SingleSiteDataset(Dataset):
             raise KeyError(f"{parquet_path}: FEATURE_COLS 누락 {miss[:8]}")
 
         need = self.seq_len + self.pred_len
-        self.indices = list(range(0, len(self.df) - need + 1, self.stride))
+        self.indices = _window_start_indices(
+            self.df.index,
+            need=need,
+            stride=self.stride,
+            align_midnight=self.align_midnight,
+        )
 
     def __len__(self) -> int:
         return len(self.indices)
@@ -132,6 +178,7 @@ def build_multisite_dataset(
     pred_len: int = 24,
     stride: int = 1,
     min_windows: int = 1,
+    align_window_start_to_midnight: bool = True,
     **dataset_kw: Any,
 ) -> ConcatDataset:
     pattern = os.path.join(feature_mart_dir, split, "*.parquet")
@@ -147,6 +194,7 @@ def build_multisite_dataset(
             seq_len=seq_len,
             pred_len=pred_len,
             stride=stride,
+            align_window_start_to_midnight=align_window_start_to_midnight,
             **dataset_kw,
         )
         if len(ds) < min_windows:
@@ -169,6 +217,7 @@ def load_test_windows(
     *,
     merge_future_nwp_into_encoder_input: bool = False,
     future_nwp_variable_names: Optional[tuple[str, ...]] = None,
+    align_window_start_to_midnight: bool = True,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     ds = SingleSiteDataset(
         parquet_path,
@@ -177,6 +226,7 @@ def load_test_windows(
         stride=pred_len,
         merge_future_nwp_into_encoder_input=merge_future_nwp_into_encoder_input,
         future_nwp_variable_names=future_nwp_variable_names,
+        align_window_start_to_midnight=align_window_start_to_midnight,
     )
     c_x = encoder_input_channel_count(
         merge_future_nwp_into_encoder_input=merge_future_nwp_into_encoder_input
