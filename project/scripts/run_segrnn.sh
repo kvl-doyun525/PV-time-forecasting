@@ -7,6 +7,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 mkdir -p logs
 
+_SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${_SCRIPTS_DIR}/lib_training_skip.sh"
+
 COMPOSE=(docker compose -f docker/docker-compose.yml)
 RUNS_GROUP="${RUNS_GROUP:-segrnn_seq_168}"
 SEQ_LEN="${SEQ_LEN:-168}"
@@ -22,6 +26,10 @@ HORIZONS=(24 48 72)
 for H in "${HORIZONS[@]}"; do
   for S in "${SEEDS[@]}"; do
     out_dir="${OUT_BASE}/seg${SEG_LEN}_h${H}_seed${S}"
+    if training_is_done "${out_dir}" "${H}"; then
+      echo "=== skip (이미 완료): ${out_dir} ==="
+      continue
+    fi
     echo "=== SegRNN seg_len=${SEG_LEN} pred_len=${H} seed=${S} ==="
     "${COMPOSE[@]}" run --rm unified \
       python src/train/train_tslib_model.py \
