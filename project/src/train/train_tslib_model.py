@@ -252,6 +252,16 @@ def main() -> None:
     parser.add_argument("--feature-mart", default="artifacts/feature_mart_per_site")
     parser.add_argument("--seq-len", type=int, default=168)
     parser.add_argument("--pred-len", type=int, default=24)
+    parser.add_argument(
+        "--train-window-stride",
+        type=int,
+        default=24,
+        metavar="ROWS",
+        help=(
+            "train split 윈도우 시작 간격(행). 마트가 1시간 해상도면 24=24시간마다 한 윈도우. "
+            "valid 는 항상 pred_len 간격(--pred-len 행)과 동일."
+        ),
+    )
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--lr", type=float, default=0.001)
@@ -309,6 +319,10 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[train] model={args.model}, seed={args.seed}, device={device}")
     print(f"[train] context_len(L)={args.seq_len}, pred_len(H)={args.pred_len}")
+    print(
+        f"[train] window_stride(rows): train={args.train_window_stride}, "
+        f"valid={args.pred_len} (non-overlap valid steps)"
+    )
     if merge_nwp:
         print(
             f"[train] merge_future_nwp_into_encoder_input: "
@@ -326,8 +340,16 @@ def main() -> None:
         # 상대 경로는 project/ 기준 (Docker에서 repo 전체가 아닌 /workspace만 마운트됨)
         mart = str(_PROJECT_DIR / mart)
 
+    if args.train_window_stride < 1:
+        raise SystemExit("--train-window-stride must be >= 1")
+
     train_ds = build_multisite_dataset(
-        mart, "train", seq_len=args.seq_len, pred_len=args.pred_len, stride=1, **ds_kw
+        mart,
+        "train",
+        seq_len=args.seq_len,
+        pred_len=args.pred_len,
+        stride=args.train_window_stride,
+        **ds_kw,
     )
     valid_ds = build_multisite_dataset(
         mart,

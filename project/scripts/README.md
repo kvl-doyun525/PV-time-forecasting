@@ -10,6 +10,7 @@
 - **실험 그룹 폴더**: `RUNS_GROUP` 환경변수 (예: `dlinear_seq_168`, `segrnn_seq_168`). 미설정 시 각 스크립트 기본값 사용.
 - **배치**: `BATCH_SIZE` (기본: DLinear/SegRNN/PatchTST·해당 future_nwp 는 `256`, TimeLLM·`run_timellm*_future_nwp.sh` 는 `32`). `BATCH_SIZE=128 bash scripts/run_dlinear.sh` 처럼 환경변수로 덮어쓴다.
 - **이미 학습된 런 건너뛰기**: 기본적으로 `--output-dir` 아래에 `metrics_test_<pred_len>h.json` 이 있으면 해당 조합은 스킵한다. 강제 재학습은 `SKIP_IF_DONE=0 bash scripts/run_dlinear_future_nwp.sh` .
+- **윈도우 stride (`train_tslib_model.py`)**: 마트가 1시간 간격이면 `train` 기본은 **24행(24시간)** 간격(`--train-window-stride`, 기본 24), `valid` 는 **`pred_len` 행** 간격(예: 24h 예측이면 24시간 간격). 예전처럼 매 시각 학습 샘플을 쓰려면 `--train-window-stride 1` .
 - **배치 진행 로그**: `LOG_BATCH_EVERY` (기본 `0` = 비활성). 예: `LOG_BATCH_EVERY=50` 이면 50 배치마다 train/valid step 출력 (`--log-batch-every`).
 - **로그**: `mkdir -p logs` 후 `2>&1 | tee logs/run_xxx.log` 권장.
 
