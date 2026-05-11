@@ -7,6 +7,10 @@
 #   ./collect_system_diagnostics.sh stop              # start로 띄운 수집 중지
 #   LOG_ROOT=/path ./collect_system_diagnostics.sh snapshot
 #
+# snapshot 출력 예: host_summary, dmesg, journal 현재/이전 부트, journald·부트 파라미터,
+#   커널 이슈 grep 요약, pstore, interrupts, nvidia, docker, sar 등
+# 프리즈 직후에는 재부팅한 뒤 곧바로 snapshot을 실행하면 journal -b -1 이 이전(프리즈) 부트를 가리킨다.
+#
 # 환경변수:
 #   LOG_ROOT   로그 루트 (기본: 이 스크립트가 있는 디렉터리 아래 logs/freeze_diagnostics)
 #   NV_INTERVAL nvidia-smi 샘플 간격 초 (기본: 1)
@@ -54,12 +58,53 @@ cmd_snapshot() {
     free -h || true
     echo "=== df -h ==="
     df -h || true
+    echo "=== last reboot/shutdown (recent) ==="
+    last -x reboot shutdown 2>/dev/null | head -20 || true
   } >"$out/host_summary.txt" 2>&1
 
   run_sudo dmesg -T >"$out/dmesg.txt" 2>&1 || dmesg -T >"$out/dmesg_no_sudo.txt" 2>&1 || true
 
   journalctl -b -0 --no-pager -n 800 >"$out/journal_last800.txt" 2>&1 || true
   run_sudo journalctl -b -0 -k --no-pager -n 400 >"$out/journal_kernel_last400.txt" 2>&1 || true
+
+  # ── 이전 부트(프리즈/재부팅 직후 분석용) ─────────────────────────────
+  journalctl --list-boots --no-pager >"$out/journal_list_boots.txt" 2>&1 || true
+  journalctl -b -1 --no-pager -n 600 >"$out/journal_prev_boot_last600.txt" 2>&1 || true
+  run_sudo journalctl -b -1 -k --no-pager -n 2500 >"$out/journal_prev_boot_kernel_last2500.txt" 2>&1 || true
+  journalctl -b -1 -k --no-pager 2>/dev/null | grep -iE \
+    'BUG:|Oops:|NULL pointer|Xid |NVRM:|MCE|Machine Check|hung task|soft lockup|Hard LOCKUP|Out of memory:|oom-killer|Killed process|nobody cared|Disabling IRQ|watchdog:|Blocked for more than|ep_poll_callback|containerd-shim' \
+    >"$out/journal_prev_boot_kernel_grep_hints.txt" 2>&1 || true
+  [[ ! -s "$out/journal_prev_boot_kernel_grep_hints.txt" ]] && echo "(no matches in prev-boot kernel grep filter)" >"$out/journal_prev_boot_kernel_grep_hints.txt"
+
+  # ── journald 영구 저장·워치독·부트 파라미터·pstore ───────────────────
+  {
+    echo "=== /var/log/journal (persistent) ==="
+    if [[ -d /var/log/journal ]]; then echo "exists: yes"; ls -la /var/log/journal 2>&1 | head -5; else echo "exists: no (volatile /run/log/journal only — reboot clears older boots)"; fi
+    echo "=== journald.conf (non-comment lines) ==="
+    grep -vE '^\s*#|^\s*$' /etc/systemd/journald.conf 2>&1 || true
+    echo "=== systemctl is-active systemd-journald ==="
+    systemctl is-active systemd-journald 2>&1 || true
+  } >"$out/journald_storage_summary.txt" 2>&1
+
+  {
+    echo "=== /proc/cmdline ==="
+    cat /proc/cmdline 2>&1 || true
+    echo "=== watchdog sysctl ==="
+    for f in /proc/sys/kernel/nmi_watchdog /proc/sys/kernel/watchdog /proc/sys/kernel/watchdog_thresh /proc/sys/kernel/softlockup_panic; do
+      [[ -r "$f" ]] && echo "$f=$(cat "$f" 2>&1)"
+    done
+  } >"$out/kernel_boot_watchdog.txt" 2>&1 || true
+
+  {
+    echo "=== /sys/fs/pstore ==="
+    ls -la /sys/fs/pstore 2>&1 || true
+    for f in /sys/fs/pstore/*; do
+      [[ -e "$f" ]] || continue
+      [[ -f "$f" ]] || continue
+      echo "----- $f -----"
+      run_sudo head -c 200000 "$f" 2>&1 || head -c 200000 "$f" 2>&1 || true
+    done
+  } >"$out/pstore_head.txt" 2>&1 || true
 
   journalctl -u systemd-oomd --no-pager -n 200 >"$out/journal_systemd_oomd_last200.txt" 2>&1 || true
 
@@ -163,7 +208,7 @@ usage() {
   cat <<EOF
 사용법: $0 {snapshot|start|stop}
 
-  snapshot  현재 시점 1회 덤프 (OOM/IRQ/GPU/메모리/도커 등)
+  snapshot  현재 시점 1회 덤프 (이전 부트 journal, journald/pstore/워치독, OOM/IRQ/GPU 등)
   start     journal/nvidia/vmstat/sar/docker events 를 백그라운드로 파일에 기록
   stop      start 로 기록한 PID 종료
 

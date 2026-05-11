@@ -28,12 +28,33 @@ def _horizon_sort_key(hk: str) -> int:
 
 
 def _fmt_num(x: object) -> str:
+    """리더보드 셀용 짧은 숫자 문자열(표 가로 폭·가독성)."""
     if x is None or x == "":
         return "—"
-    if isinstance(x, (int, float)) and not isinstance(x, bool):
-        s = f"{float(x):.6f}"
-        return s.rstrip("0").rstrip(".")
-    return str(x)
+    if isinstance(x, bool):
+        return str(x)
+    if isinstance(x, int):
+        return str(x)
+    if isinstance(x, float):
+        v = float(x)
+        if abs(v) >= 1e5 or (0 < abs(v) < 1e-4):
+            return f"{v:.3e}"
+        return f"{v:.4f}".rstrip("0").rstrip(".") or "0"
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return str(x)[:12]
+    if abs(v) >= 1e5 or (0 < abs(v) < 1e-4):
+        return f"{v:.3e}"
+    return f"{v:.4f}".rstrip("0").rstrip(".") or "0"
+
+
+def _short_group(s: str, max_len: int = 28) -> str:
+    """표 열 폭: 실험 그룹 경로만 잘라 표시."""
+    s = str(s)
+    if len(s) <= max_len:
+        return s
+    return s[: max_len - 1] + "…"
 
 
 def _read_metrics_json(path: Path) -> dict | None:
@@ -81,10 +102,12 @@ def _emit_legacy_vs_new_naming(lines: list[str], base: Path) -> None:
         lines.append(f"### `{group_dir.name}`")
         lines.append("")
         lines.append(
-            "| H | seed | 복구 전 폴더 | MAE | RMSE | daytime_MAE | daily_energy_error | "
-            "복구 후 폴더 | MAE | RMSE | daytime_MAE | daily_energy_error | ΔMAE |"
+            "| H | seed | 복구 전 | MAE | RMSE | dayMAE | dayEerr | "
+            "복구 후 | MAE | RMSE | dayMAE | dayEerr | ΔMAE |"
         )
-        lines.append("|---:|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|")
+        lines.append(
+            "|---:|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|"
+        )
         for H, seed in keys:
             lo, no = legacy[(H, seed)], newm[(H, seed)]
             p_old = group_dir / lo / f"metrics_test_{H}h.json"
@@ -98,11 +121,11 @@ def _emit_legacy_vs_new_naming(lines: list[str], base: Path) -> None:
             else:
                 d_s = "—"
             lines.append(
-                f"| {H} | {seed} | `{lo}` | {_fmt_num(o.get('MAE') if o else None)} | "
+                f"| {H} | {seed} | `{_short_group(lo, 14)}` | {_fmt_num(o.get('MAE') if o else None)} | "
                 f"{_fmt_num(o.get('RMSE') if o else None)} | "
                 f"{_fmt_num(o.get('daytime_MAE') if o else None)} | "
                 f"{_fmt_num(o.get('daily_energy_error') if o else None)} | "
-                f"`{no}` | {_fmt_num(n.get('MAE') if n else None)} | "
+                f"`{_short_group(no, 14)}` | {_fmt_num(n.get('MAE') if n else None)} | "
                 f"{_fmt_num(n.get('RMSE') if n else None)} | "
                 f"{_fmt_num(n.get('daytime_MAE') if n else None)} | "
                 f"{_fmt_num(n.get('daily_energy_error') if n else None)} | {d_s} |"
@@ -145,7 +168,9 @@ def main() -> None:
     lines: list[str] = [
         "# Benchmark leaderboard",
         "",
-        "horizon(예측 길이)마다 표를 나눈다. `summary.json`은 seed 집계, Raw는 개별 `metrics_test_*h.json`.",
+        "horizon(예측 길이)마다 표를 나눈다. `summary.json`은 seed 집계, Raw는 개별 `metrics_test_*h.json`. "
+        "숫자는 표시용으로 소수 4자리(또는 매우 작/큰 값은 과학 표기)로 반올림한다. "
+        "긴 `group`/경로는 잘림(`…`).",
         "",
     ]
 
@@ -164,16 +189,16 @@ def main() -> None:
             for hk, block in (data.get("horizons") or {}).items():
                 summary_by_h[str(hk)].append(
                     {
-                        "group": group,
-                        "model": model,
-                        "MAE_mean": str(block.get("MAE_mean", "")),
-                        "MAE_std": str(block.get("MAE_std", "")),
-                        "daytime_MAE_mean": str(block.get("daytime_MAE_mean", "")),
-                        "daily_energy_error_mean": str(
-                            block.get("daily_energy_error_mean", "")
+                        "group": _short_group(group),
+                        "model": _short_group(model, 22),
+                        "MAE_mean": _fmt_num(block.get("MAE_mean")),
+                        "MAE_std": _fmt_num(block.get("MAE_std")),
+                        "daytime_MAE_mean": _fmt_num(block.get("daytime_MAE_mean")),
+                        "daily_energy_error_mean": _fmt_num(
+                            block.get("daily_energy_error_mean")
                         ),
-                        "daily_energy_error_std": str(
-                            block.get("daily_energy_error_std", "")
+                        "daily_energy_error_std": _fmt_num(
+                            block.get("daily_energy_error_std")
                         ),
                     }
                 )
@@ -190,8 +215,7 @@ def main() -> None:
             lines.append(f"### Horizon {hk}")
             lines.append("")
             lines.append(
-                "| group | model | MAE_mean | MAE_std | daytime_MAE_mean | "
-                "daily_energy_error_mean | daily_energy_error_std |"
+                "| group | model | MAE_m | MAE_σ | dayMAE_m | dEerr_m | dEerr_σ |"
             )
             lines.append("|---|---|---:|---:|---:|---:|---:|")
             for r in rows:
@@ -220,9 +244,9 @@ def main() -> None:
             raw_by_h[hi].append(
                 (
                     rel,
-                    str(m.get("MAE", "")),
-                    str(m.get("RMSE", "")),
-                    str(m.get("daily_energy_error", "")),
+                    _fmt_num(m.get("MAE")),
+                    _fmt_num(m.get("RMSE")),
+                    _fmt_num(m.get("daily_energy_error")),
                 )
             )
 
@@ -241,8 +265,9 @@ def main() -> None:
             lines.append(f"### {hi}h{note}")
             lines.append("")
             for rel, mae, rmse, dee in entries:
+                rel_disp = _short_group(rel, 56)
                 lines.append(
-                    f"- `{rel}` MAE={mae} RMSE={rmse} daily_energy_error={dee}"
+                    f"- `{rel_disp}` MAE={mae} RMSE={rmse} dEerr={dee}"
                 )
             lines.append("")
 
