@@ -7,7 +7,6 @@ TSLib 기반 시계열 예측 학습 스크립트.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import os
 import random
@@ -81,6 +80,70 @@ def build_configs(
     )
 
 
+# Time-LLM KimMeen/Time-LLM: Model.__init__ 가 huggingface 기본 체크포인트 hidden과 맞춤
+_TIMELLM_LLM_DIM: dict[str, int] = {
+    "GPT2": 768,
+    "BERT": 768,
+    "LLAMA": 4096,
+}
+
+
+def _augment_configs_for_timellm(configs: SimpleNamespace, args: Namespace) -> None:
+    """공식 TimeLLM.Model 이 읽는 configs 필드 보강( llm_dim·patch_len 등 )."""
+    key = str(args.llm_model)
+    if key not in _TIMELLM_LLM_DIM:
+        raise ValueError(
+            f"TimeLLM: llm_model={key!r} — 지원 키: {sorted(_TIMELLM_LLM_DIM)}"
+        )
+    configs.llm_dim = _TIMELLM_LLM_DIM[key]
+    configs.llm_model = key
+    configs.llm_layers = int(args.llm_layers)
+    configs.patch_len = int(args.patch_len)
+    configs.stride = int(args.stride)
+    configs.prompt_domain = False
+    configs.content = ""
+
+
+def _timellm_repo_root() -> Path:
+    """KimMeen/Time-LLM 클론 루트(models/, layers/ 포함)."""
+    for root in (
+        _PROJECT_DIR / "vendor" / "TimeLLM",
+        Path("/workspace/TimeLLM"),
+    ):
+        r = root.resolve()
+        if (r / "models" / "TimeLLM.py").is_file() and (r / "layers" / "Embed.py").is_file():
+            return r
+    raise ModuleNotFoundError(
+        "TimeLLM 저장소 없음: project/vendor/TimeLLM 또는 /workspace/TimeLLM 에 "
+        "models/TimeLLM.py 와 layers/Embed.py 가 있어야 함"
+    )
+
+
+def _prepend_sys_path_front(path: Path) -> None:
+    s = str(path.resolve())
+    while s in sys.path:
+        sys.path.remove(s)
+    sys.path.insert(0, s)
+
+
+def _patch_timellm_patch_embedding_input_dtype(model: nn.Module) -> None:
+    """
+    TimeLLM.forecast 가 patch_embedding 호출 전 x_enc.to(bfloat16) 을 강제하는데,
+    학습 스크립트는 model.float() 로 패치 경로는 float32 유지 → dtype 불일치.
+    patch_embedding **입력**을 해당 서브모듈 가중치 dtype 으로 맞춘다(state_dict 키 유지).
+    """
+    pe = getattr(model, "patch_embedding", None)
+    if pe is None or not isinstance(pe, nn.Module):
+        return
+    orig_forward = pe.forward
+
+    def forward_with_input_dtype(x):  # type: ignore[no-untyped-def]
+        wdt = next(pe.parameters()).dtype
+        return orig_forward(x.to(dtype=wdt))
+
+    pe.forward = forward_with_input_dtype  # type: ignore[method-assign]
+
+
 def build_model(model_name: str, configs: SimpleNamespace, args: Namespace) -> nn.Module:
     if model_name == "DLinear":
         from models.DLinear import Model
@@ -91,22 +154,11 @@ def build_model(model_name: str, configs: SimpleNamespace, args: Namespace) -> n
 
         return Model(configs, patch_len=int(args.patch_len), stride=int(args.stride))
     elif model_name == "TimeLLM":
-        timelm_path = _PROJECT_DIR / "vendor" / "TimeLLM"
-        if str(timelm_path) not in sys.path:
-            sys.path.insert(0, str(timelm_path))
-        try:
-            from models.TimeLLM import Model
-        except ModuleNotFoundError:
-            alt = Path("/workspace/TimeLLM/models/TimeLLM.py")
-            if not alt.exists():
-                raise ModuleNotFoundError(
-                    "TimeLLM 미설치: project/vendor/TimeLLM 또는 /workspace/TimeLLM 필요"
-                ) from None
-            spec = importlib.util.spec_from_file_location("TimeLLM", str(alt))
-            mod = importlib.util.module_from_spec(spec)
-            assert spec.loader is not None
-            spec.loader.exec_module(mod)
-            Model = mod.Model
+        _augment_configs_for_timellm(configs, args)
+        # TSLib이 sys.path 앞에 있으면 `layers.Embed`가 TSLib PatchEmbedding( padding 필수 )로
+        # 잡혀 Time-LLM 호출 시그니처와 충돌한다 → Time-LLM 루트를 반드시 맨 앞에 둔다.
+        _prepend_sys_path_front(_timellm_repo_root())
+        from models.TimeLLM import Model
     else:
         raise ValueError(f"지원하지 않는 모델: {model_name}")
     return Model(configs)
@@ -396,7 +448,8 @@ def main() -> None:
     model = build_model(args.model, configs, args).to(device)
     if args.model == "TimeLLM":
         model.float()
-        print("[train] TimeLLM: float32 가중치 사용")
+        _patch_timellm_patch_embedding_input_dtype(model)
+        print("[train] TimeLLM: float32 가중치 사용, patch_embedding 입력 dtype 정렬")
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"[train] 파라미터 수: {n_params:,}")
 
@@ -461,6 +514,7 @@ def main() -> None:
     model.load_state_dict(ckpt["model_state"])
     if args.model == "TimeLLM":
         model.float()
+        _patch_timellm_patch_embedding_input_dtype(model)
     print("[train] best model 로드 완료, 테스트 예측 생성 중...")
 
     rows = generate_predictions(
