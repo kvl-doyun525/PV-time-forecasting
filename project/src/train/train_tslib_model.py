@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import multiprocessing
 import os
 import random
 import re
@@ -25,7 +24,7 @@ import pandas as pd
 
 def _silence_known_vendor_future_warnings() -> None:
     """
-    - torch.cuda: pynvml 폐기 FutureWarning (import torch 직후·spawn 워커에서 반복).
+    - torch.cuda: pynvml 폐기 FutureWarning (import torch 직후 등).
     - huggingface_hub: resume_download 폐기 FutureWarning.
     filterwarnings 는 import torch **이전**에 등록해야 첫 경고를 막는다.
     """
@@ -281,18 +280,6 @@ def build_model(model_name: str, configs: SimpleNamespace, args: Namespace) -> n
     return Model(configs)
 
 
-def _dataloader_mp_kwargs(device: torch.device, num_workers: int) -> dict:
-    """CUDA 사용 시 fork 워커가 부모 CUDA 컨텍스트와 교착되는 경우가 있어 spawn 사용."""
-    if num_workers > 0 and device.type == "cuda":
-        return {"multiprocessing_context": multiprocessing.get_context("spawn")}
-    return {}
-
-
-def _dataloader_worker_init_silence_pynvml(_worker_id: int) -> None:
-    """spawn 워커는 경고 필터가 비어 있음; torch.cuda 는 worker_init 이전에 import 될 수 있어 nvidia-ml-py 권장."""
-    _silence_known_vendor_future_warnings()
-
-
 def train_one_epoch(
     model: nn.Module,
     loader: DataLoader,
@@ -321,7 +308,7 @@ def train_one_epoch(
         if bi == 1:
             print(
                 f"[batch] epoch {ep}/{ne} {phase}: 첫 배치 수신 → GPU 전달·forward… "
-                f"(TimeLLM은 첫 스텝이 매우 오래 걸릴 수 있음)",
+                f"(모델·배치에 따라 첫 스텝이 오래 걸릴 수 있음)",
                 flush=True,
             )
         x = x.to(device, non_blocking=True)
@@ -598,11 +585,6 @@ def main() -> None:
         **ds_kw,
     )
 
-    _dl_mp = _dataloader_mp_kwargs(device, int(args.num_workers))
-    _dl_common: dict = {**_dl_mp}
-    if int(args.num_workers) > 0:
-        _dl_common["worker_init_fn"] = _dataloader_worker_init_silence_pynvml
-
     train_loader = DataLoader(
         train_ds,
         batch_size=args.batch_size,
@@ -610,8 +592,6 @@ def main() -> None:
         num_workers=args.num_workers,
         pin_memory=device.type == "cuda",
         drop_last=True,
-        persistent_workers=args.num_workers > 0,
-        **_dl_common,
     )
     valid_loader = DataLoader(
         valid_ds,
@@ -619,8 +599,6 @@ def main() -> None:
         shuffle=False,
         num_workers=args.num_workers,
         pin_memory=device.type == "cuda",
-        persistent_workers=args.num_workers > 0,
-        **_dl_common,
     )
 
     configs = build_configs(
@@ -689,7 +667,7 @@ def main() -> None:
     if start_epoch <= args.epochs:
         print(
             f"[train] 에폭 {start_epoch}~{args.epochs} 학습 루프 진입 "
-            f"(CUDA+다중 워커 시 첫 배치 전 spawn 워커 기동에 시간이 걸릴 수 있음)",
+            f"(다중 워커 시 첫 배치까지 대기가 길 수 있음)",
             flush=True,
         )
 
