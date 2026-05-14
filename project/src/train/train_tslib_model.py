@@ -8,16 +8,33 @@ from __future__ import annotations
 
 import argparse
 import json
+import multiprocessing
 import os
 import random
+import re
 import sys
 import time
+import warnings
 from argparse import Namespace
 from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
+
+
+def _silence_known_vendor_future_warnings() -> None:
+    """
+    - torch.cuda: pynvml 폐기 FutureWarning (import torch 직후·spawn 워커에서 반복).
+    - huggingface_hub: resume_download 폐기 FutureWarning.
+    filterwarnings 는 import torch **이전**에 등록해야 첫 경고를 막는다.
+    """
+    warnings.filterwarnings("ignore", category=FutureWarning, module=r"torch\.cuda.*")
+    warnings.filterwarnings("ignore", category=FutureWarning, module=r"huggingface_hub\..*")
+
+
+_silence_known_vendor_future_warnings()
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -39,6 +56,9 @@ from datasets.pv_dataset import (
     load_test_windows,
 )
 
+# 에폭 끝마다 저장하는 중간 체크포인트 (best_model.pt 와 별개)
+_EPOCH_CKPT_RE = re.compile(r"^checkpoint_epoch_(\d+)\.pt$")
+
 
 def set_seed(seed: int) -> None:
     random.seed(seed)
@@ -46,6 +66,103 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+
+def configure_hf_hub_cache_env(project_root: Path) -> str:
+    """
+    Hugging Face 모델/토크나이저 캐시 위치를 고정한다.
+    - HF_HOME 이 이미 있으면 그대로 사용 (예: Docker 이미지의 /opt/huggingface_cache).
+    - 없으면 project/artifacts/huggingface (호스트 볼륨에 남아 재실행 시 재다운로드 방지).
+    """
+    existing = (os.environ.get("HF_HOME") or "").strip()
+    if existing:
+        p = Path(existing).expanduser()
+        p.mkdir(parents=True, exist_ok=True)
+        return str(p.resolve())
+    cache_root = (project_root / "artifacts" / "huggingface").resolve()
+    cache_root.mkdir(parents=True, exist_ok=True)
+    os.environ["HF_HOME"] = str(cache_root)
+    return str(cache_root)
+
+
+def _list_epoch_checkpoint_paths(output_dir: str) -> list[tuple[int, str]]:
+    """checkpoint_epoch_####.pt → (epoch, path) 목록."""
+    out: list[tuple[int, str]] = []
+    try:
+        names = os.listdir(output_dir)
+    except OSError:
+        return out
+    for name in names:
+        m = _EPOCH_CKPT_RE.match(name)
+        if m:
+            out.append((int(m.group(1)), os.path.join(output_dir, name)))
+    return out
+
+
+def _latest_epoch_checkpoint_path(output_dir: str) -> str | None:
+    paths = _list_epoch_checkpoint_paths(output_dir)
+    if not paths:
+        return None
+    paths.sort(key=lambda t: t[0])
+    return paths[-1][1]
+
+
+def _remove_all_epoch_checkpoints(output_dir: str) -> None:
+    for _, p in _list_epoch_checkpoint_paths(output_dir):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+
+
+def _resume_args_compatible(saved_args: dict, cur: dict) -> tuple[bool, str]:
+    """재개 시 설정 불일치로 인한 묵시적 오류 방지."""
+    keys = (
+        "model",
+        "pred_len",
+        "seq_len",
+        "merge_future_nwp_into_encoder_input",
+        "train_window_stride",
+        "d_model",
+        "n_heads",
+        "e_layers",
+        "d_ff",
+        "patch_len",
+        "stride",
+    )
+    for k in keys:
+        if saved_args.get(k) != cur.get(k):
+            return False, k
+    return True, ""
+
+
+def _save_epoch_checkpoint(
+    output_dir: str,
+    *,
+    epoch_done: int,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau,
+    best_val_loss: float,
+    patience_cnt: int,
+    history: list,
+    args_dict: dict,
+) -> None:
+    path = os.path.join(output_dir, f"checkpoint_epoch_{epoch_done:04d}.pt")
+    tmp = path + ".tmp"
+    payload = {
+        "format_version": 1,
+        "completed_epoch": int(epoch_done),
+        "model_state": model.state_dict(),
+        "optimizer_state": optimizer.state_dict(),
+        "scheduler_state": scheduler.state_dict(),
+        "best_val_loss": float(best_val_loss),
+        "patience_cnt": int(patience_cnt),
+        "history": list(history),
+        "args": dict(args_dict),
+    }
+    torch.save(payload, tmp)
+    os.replace(tmp, path)
 
 
 def build_configs(
@@ -164,6 +281,18 @@ def build_model(model_name: str, configs: SimpleNamespace, args: Namespace) -> n
     return Model(configs)
 
 
+def _dataloader_mp_kwargs(device: torch.device, num_workers: int) -> dict:
+    """CUDA 사용 시 fork 워커가 부모 CUDA 컨텍스트와 교착되는 경우가 있어 spawn 사용."""
+    if num_workers > 0 and device.type == "cuda":
+        return {"multiprocessing_context": multiprocessing.get_context("spawn")}
+    return {}
+
+
+def _dataloader_worker_init_silence_pynvml(_worker_id: int) -> None:
+    """spawn 워커는 경고 필터가 비어 있음; torch.cuda 는 worker_init 이전에 import 될 수 있어 nvidia-ml-py 권장."""
+    _silence_known_vendor_future_warnings()
+
+
 def train_one_epoch(
     model: nn.Module,
     loader: DataLoader,
@@ -182,9 +311,21 @@ def train_one_epoch(
     n_batches = len(loader)
     ep = epoch if epoch is not None else "?"
     ne = epochs if epochs is not None else "?"
+    nw = getattr(loader, "num_workers", 0)
+    print(
+        f"[batch] epoch {ep}/{ne} {phase}: 시작 "
+        f"(배치 수={n_batches}, num_workers={nw}, 첫 배치 대기 중일 수 있음)",
+        flush=True,
+    )
     for bi, (x, y) in enumerate(loader, start=1):
-        x = x.to(device)
-        y = y.to(device)
+        if bi == 1:
+            print(
+                f"[batch] epoch {ep}/{ne} {phase}: 첫 배치 수신 → GPU 전달·forward… "
+                f"(TimeLLM은 첫 스텝이 매우 오래 걸릴 수 있음)",
+                flush=True,
+            )
+        x = x.to(device, non_blocking=True)
+        y = y.to(device, non_blocking=True)
         y_target = y[:, :, target_idx : target_idx + 1]
 
         optimizer.zero_grad()
@@ -197,6 +338,12 @@ def train_one_epoch(
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
         total_loss += loss.item()
+
+        if bi == 1:
+            print(
+                f"[batch] epoch {ep}/{ne} {phase}: 첫 배치 step 완료 loss={loss.item():.6f}",
+                flush=True,
+            )
 
         if log_batch_every > 0 and (bi % log_batch_every == 0 or bi == n_batches):
             print(
@@ -223,10 +370,20 @@ def validate(
     n_batches = len(loader)
     ep = epoch if epoch is not None else "?"
     ne = epochs if epochs is not None else "?"
+    nw = getattr(loader, "num_workers", 0)
+    print(
+        f"[batch] epoch {ep}/{ne} valid: 시작 (배치 수={n_batches}, num_workers={nw})",
+        flush=True,
+    )
     with torch.no_grad():
         for bi, (x, y) in enumerate(loader, start=1):
-            x = x.to(device)
-            y = y.to(device)
+            if bi == 1:
+                print(
+                    f"[batch] epoch {ep}/{ne} valid: 첫 배치 수신 → GPU·forward…",
+                    flush=True,
+                )
+            x = x.to(device, non_blocking=True)
+            y = y.to(device, non_blocking=True)
             y_target = y[:, :, target_idx : target_idx + 1]
             out = model(x, None, None, None)
             if isinstance(out, tuple):
@@ -234,6 +391,12 @@ def validate(
             out_target = out[:, :, target_idx : target_idx + 1]
             step_loss = criterion(out_target, y_target).item()
             total_loss += step_loss
+
+            if bi == 1:
+                print(
+                    f"[batch] epoch {ep}/{ne} valid: 첫 배치 완료 batch_loss={step_loss:.6f}",
+                    flush=True,
+                )
 
             if log_batch_every > 0 and (bi % log_batch_every == 0 or bi == n_batches):
                 print(
@@ -364,7 +527,16 @@ def main() -> None:
         action="store_true",
         help="첫 윈도만 자정(00:00)에 맞추는 동작 끔(윈도 시작 i=0,stride,2*stride…).",
     )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="checkpoint_epoch_*.pt 가 있어도 무시하고 처음부터 학습한다.",
+    )
     args = parser.parse_args()
+
+    if args.model == "TimeLLM":
+        hf_home = configure_hf_hub_cache_env(_PROJECT_DIR)
+        print(f"[train] Hugging Face 캐시(HF_HOME)={hf_home}", flush=True)
 
     align_midnight = not args.no_midnight_window_align
     merge_nwp = args.merge_future_nwp_into_encoder_input
@@ -426,20 +598,29 @@ def main() -> None:
         **ds_kw,
     )
 
+    _dl_mp = _dataloader_mp_kwargs(device, int(args.num_workers))
+    _dl_common: dict = {**_dl_mp}
+    if int(args.num_workers) > 0:
+        _dl_common["worker_init_fn"] = _dataloader_worker_init_silence_pynvml
+
     train_loader = DataLoader(
         train_ds,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
-        pin_memory=True,
+        pin_memory=device.type == "cuda",
         drop_last=True,
+        persistent_workers=args.num_workers > 0,
+        **_dl_common,
     )
     valid_loader = DataLoader(
         valid_ds,
         batch_size=args.batch_size * 2,
         shuffle=False,
         num_workers=args.num_workers,
-        pin_memory=True,
+        pin_memory=device.type == "cuda",
+        persistent_workers=args.num_workers > 0,
+        **_dl_common,
     )
 
     configs = build_configs(
@@ -461,56 +642,136 @@ def main() -> None:
 
     best_val_loss = float("inf")
     patience_cnt = 0
-    history = []
+    history: list = []
+    start_epoch = 1
 
-    for epoch in range(1, args.epochs + 1):
-        t0 = time.time()
-        train_loss = train_one_epoch(
-            model,
-            train_loader,
-            optimizer,
-            criterion,
-            device,
-            epoch=epoch,
-            epochs=args.epochs,
-            log_batch_every=args.log_batch_every,
-            phase="train",
-        )
-        val_loss = validate(
-            model,
-            valid_loader,
-            criterion,
-            device,
-            epoch=epoch,
-            epochs=args.epochs,
-            log_batch_every=args.log_batch_every,
-        )
-        scheduler.step(val_loss)
-        elapsed = time.time() - t0
+    if args.no_resume:
+        _remove_all_epoch_checkpoints(args.output_dir)
 
-        history.append({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss})
+    resume_path = _latest_epoch_checkpoint_path(args.output_dir)
+    if resume_path and not args.no_resume:
+        try:
+            rck = torch.load(resume_path, map_location=device)
+        except Exception as e:
+            print(f"[train] 체크포인트 로드 실패({resume_path}): {e} — 처음부터 학습", flush=True)
+            rck = None
+        if rck is not None:
+            if int(rck.get("format_version", 0)) != 1:
+                print(
+                    f"[train] 알 수 없는 체크포인트 형식(format_version={rck.get('format_version')}) "
+                    "— 처음부터 학습",
+                    flush=True,
+                )
+            else:
+                saved_args = rck.get("args") or {}
+                ok, bad_k = _resume_args_compatible(saved_args, vars(args))
+                if not ok:
+                    raise SystemExit(
+                        f"[train] 재개 불가: 저장된 설정과 현재 인자 불일치({bad_k!r}). "
+                        f"같은 output-dir에서 이어가려면 동일 하이퍼파라미터를 쓰거나 `--no-resume` 으로 새로 학습하세요."
+                    )
+                model.load_state_dict(rck["model_state"])
+                if args.model == "TimeLLM":
+                    model.float()
+                    _patch_timellm_patch_embedding_input_dtype(model)
+                optimizer.load_state_dict(rck["optimizer_state"])
+                scheduler.load_state_dict(rck["scheduler_state"])
+                best_val_loss = float(rck["best_val_loss"])
+                patience_cnt = int(rck["patience_cnt"])
+                history = list(rck.get("history") or [])
+                start_epoch = int(rck["completed_epoch"]) + 1
+                print(
+                    f"[train] 체크포인트 재개: {resume_path} "
+                    f"(완료 에폭 {rck['completed_epoch']}, {start_epoch}~{args.epochs} 진행)",
+                    flush=True,
+                )
+
+    if start_epoch <= args.epochs:
         print(
-            f"[epoch] epoch {epoch:3d}/{args.epochs} | "
-            f"train={train_loss:.6f} val={val_loss:.6f} | "
-            f"{elapsed:.1f}s",
+            f"[train] 에폭 {start_epoch}~{args.epochs} 학습 루프 진입 "
+            f"(CUDA+다중 워커 시 첫 배치 전 spawn 워커 기동에 시간이 걸릴 수 있음)",
             flush=True,
         )
 
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            patience_cnt = 0
-            ckpt_path = os.path.join(args.output_dir, "best_model.pt")
-            torch.save({"model_state": model.state_dict(), "args": vars(args)}, ckpt_path)
-        else:
-            patience_cnt += 1
+    if start_epoch > args.epochs:
+        print(
+            f"[train] 체크포인트 기준 이미 {args.epochs}에폭 학습 완료 → 학습 루프 생략",
+            flush=True,
+        )
+    else:
+        for epoch in range(start_epoch, args.epochs + 1):
+            t0 = time.time()
+            train_loss = train_one_epoch(
+                model,
+                train_loader,
+                optimizer,
+                criterion,
+                device,
+                epoch=epoch,
+                epochs=args.epochs,
+                log_batch_every=args.log_batch_every,
+                phase="train",
+            )
+            val_loss = validate(
+                model,
+                valid_loader,
+                criterion,
+                device,
+                epoch=epoch,
+                epochs=args.epochs,
+                log_batch_every=args.log_batch_every,
+            )
+            scheduler.step(val_loss)
+            elapsed = time.time() - t0
+
+            history.append(
+                {"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss}
+            )
+            print(
+                f"[epoch] epoch {epoch:3d}/{args.epochs} | "
+                f"train={train_loss:.6f} val={val_loss:.6f} | "
+                f"{elapsed:.1f}s",
+                flush=True,
+            )
+
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                patience_cnt = 0
+                ckpt_path = os.path.join(args.output_dir, "best_model.pt")
+                torch.save(
+                    {"model_state": model.state_dict(), "args": vars(args)}, ckpt_path
+                )
+            else:
+                patience_cnt += 1
+
+            _save_epoch_checkpoint(
+                args.output_dir,
+                epoch_done=epoch,
+                model=model,
+                optimizer=optimizer,
+                scheduler=scheduler,
+                best_val_loss=best_val_loss,
+                patience_cnt=patience_cnt,
+                history=history,
+                args_dict=vars(args),
+            )
+
             if patience_cnt >= args.patience:
-                print(f"  [EarlyStopping] epoch {epoch} at patience={args.patience}")
+                print(
+                    f"  [EarlyStopping] epoch {epoch} at patience={args.patience}",
+                    flush=True,
+                )
                 break
+
+    _remove_all_epoch_checkpoints(args.output_dir)
 
     with open(os.path.join(args.output_dir, "train_history.json"), "w") as f:
         json.dump(history, f, indent=2)
 
-    ckpt = torch.load(os.path.join(args.output_dir, "best_model.pt"), map_location=device)
+    ckpt = torch.load(
+        os.path.join(args.output_dir, "best_model.pt"),
+        map_location=device,
+    )
     model.load_state_dict(ckpt["model_state"])
     if args.model == "TimeLLM":
         model.float()
