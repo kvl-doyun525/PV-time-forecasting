@@ -449,6 +449,9 @@ def generate_predictions(
 
 
 def main() -> None:
+    import faulthandler
+
+    faulthandler.enable(all_threads=True)
     parser = argparse.ArgumentParser(description="TSLib 모델 학습")
     parser.add_argument(
         "--model", required=True, choices=["DLinear", "SegRNN", "PatchTST", "TimeLLM"]
@@ -585,12 +588,16 @@ def main() -> None:
         **ds_kw,
     )
 
+    # TimeLLM: forward 안에서 HF GPT2 토크나이저(네이티브)가 돌고, 동시에 pin_memory 전용 스레드가
+    # 살아 있으면 segfault가 난 사례가 있음(faulthandler: tokenization_gpt2.py + _pin_memory_loop).
+    _pin_mem = device.type == "cuda" and args.model != "TimeLLM"
+
     train_loader = DataLoader(
         train_ds,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
-        pin_memory=device.type == "cuda",
+        pin_memory=_pin_mem,
         drop_last=True,
     )
     valid_loader = DataLoader(
@@ -598,7 +605,7 @@ def main() -> None:
         batch_size=args.batch_size * 2,
         shuffle=False,
         num_workers=args.num_workers,
-        pin_memory=device.type == "cuda",
+        pin_memory=_pin_mem,
     )
 
     configs = build_configs(
@@ -608,7 +615,11 @@ def main() -> None:
     if args.model == "TimeLLM":
         model.float()
         _patch_timellm_patch_embedding_input_dtype(model)
-        print("[train] TimeLLM: float32 가중치 사용, patch_embedding 입력 dtype 정렬")
+        print(
+            "[train] TimeLLM: float32 가중치 사용, patch_embedding 입력 dtype 정렬; "
+            "DataLoader pin_memory=False (토크나이저·pin_memory 스레드 병행 segfault 회피)",
+            flush=True,
+        )
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"[train] 파라미터 수: {n_params:,}")
 

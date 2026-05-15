@@ -32,6 +32,9 @@ services:
       - ../artifacts:/workspace/artifacts
       - ../artifacts/models:/models             # HF 모델 캐시
       - ../vendor/TSLib:/workspace/vendor/TSLib  # 호스트에서 코드 수정 가능
+    environment:
+      - PYTHONFAULTHANDLER=1
+      - TORCH_SHOW_CPP_STACKTRACES=1
     <<: *gpu-deploy
     env_file: ../.env
     working_dir: /workspace
@@ -45,6 +48,9 @@ services:
       dockerfile: docker/time_llm/Dockerfile
     volumes: *common-volumes
     <<: *gpu-deploy
+    environment:
+      - PYTHONFAULTHANDLER=1
+      - TORCH_SHOW_CPP_STACKTRACES=1
     env_file: ../.env
     working_dir: /workspace
     shm_size: "8gb"

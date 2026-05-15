@@ -9,7 +9,7 @@ mkdir -p logs
 
 # --- 필요 시 여기만 수정 (하위 run_*_future_nwp.sh 에 export 전달) ---
 export SEQ_LEN="${SEQ_LEN:-168}"
-export NUM_WORKERS="${NUM_WORKERS:-12}"
+export NUM_WORKERS="${NUM_WORKERS:-0}"
 # export LOG_BATCH_EVERY="${LOG_BATCH_EVERY:-0}"
 # 선택: 모든 단계에 동일 배치 (TimeLLM은 기본 32라 VRAM 여유 없으면 32 이하 권장)
 # export BATCH_SIZE=128
