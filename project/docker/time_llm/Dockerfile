@@ -1,12 +1,12 @@
-# Time-LLM 전용: torch 2.1.x + transformers 4.31.0 고정
-FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
+# Time-LLM 공식 requirements.txt 의 torch==2.2.2 와 정렬 (CUDA 12.1)
+FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
-    git curl libgomp1 \
+    git curl libgomp1 build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
@@ -18,10 +18,8 @@ ENV HF_HOME=/opt/huggingface_cache
 COPY docker/time_llm/requirements-time-llm.txt /tmp/
 RUN pip install --no-cache-dir -r /tmp/requirements-time-llm.txt
 
-# Time-LLM 공식 저장소 설치
-RUN git clone https://github.com/KimMeen/Time-LLM.git /workspace/TimeLLM \
-    && cd /workspace/TimeLLM \
-    && pip install --no-cache-dir -r requirements.txt || true
+# Time-LLM 소스만 클론 (의존성은 requirements-time-llm.txt 가 공식 핀과 동일하게 설치)
+RUN git clone --depth 1 https://github.com/KimMeen/Time-LLM.git /workspace/TimeLLM
 
 # TimeLLM.Model 과 동일한 HF id 로 빌드 시 캐시 (런타임 재다운로드 완화)
 RUN mkdir -p "$HF_HOME" && python -c "\

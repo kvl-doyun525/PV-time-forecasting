@@ -525,8 +525,15 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.model == "TimeLLM":
+        # HF tokenizers 가 내부적으로 스레드를 쓰며 torch/CUDA 와 겹치면 segfault 가 난 사례 있음
+        # (faulthandler: tokenization_utils.split / GPT2 경로). import 전에 고정해야 함.
+        os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
         hf_home = configure_hf_hub_cache_env(_PROJECT_DIR)
-        print(f"[train] Hugging Face 캐시(HF_HOME)={hf_home}", flush=True)
+        print(
+            f"[train] Hugging Face 캐시(HF_HOME)={hf_home}, "
+            f"TOKENIZERS_PARALLELISM={os.environ.get('TOKENIZERS_PARALLELISM', '')}",
+            flush=True,
+        )
 
     align_midnight = not args.no_midnight_window_align
     merge_nwp = args.merge_future_nwp_into_encoder_input

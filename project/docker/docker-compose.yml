@@ -51,6 +51,7 @@ services:
     environment:
       - PYTHONFAULTHANDLER=1
       - TORCH_SHOW_CPP_STACKTRACES=1
+      - TOKENIZERS_PARALLELISM=false
     env_file: ../.env
     working_dir: /workspace
     shm_size: "8gb"
@@ -79,5 +80,6 @@ services:
       - CUDA_VISIBLE_DEVICES=""
       - OMP_NUM_THREADS=16
       - MKL_NUM_THREADS=16
+      - TOKENIZERS_PARALLELISM=false
     working_dir: /workspace
     cpus: "16"
