@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # DLinear: pred_len × seed 전부 학습 후 seed 집계 + 리더보드 갱신
 # 사용: project/ 에서  bash scripts/run_dlinear.sh
-# 환경: RUNS_GROUP=dlinear_seq_168 (기본), SEQ_LEN=168, MART=artifacts/feature_mart_per_site
+# 환경: SEQ_LEN 기본 168 → RUNS_GROUP 기본 dlinear_seq_${SEQ_LEN} (RUNS_GROUP 직접 지정 시 그대로)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -13,8 +13,8 @@ _SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_SCRIPTS_DIR}/lib_training_skip.sh"
 
 COMPOSE=(docker compose -f docker/docker-compose.yml)
-RUNS_GROUP="${RUNS_GROUP:-dlinear_seq_168}"
 SEQ_LEN="${SEQ_LEN:-168}"
+RUNS_GROUP="${RUNS_GROUP:-dlinear_seq_${SEQ_LEN}}"
 MART="${FEATURE_MART:-artifacts/feature_mart_per_site}"
 NUM_WORKERS="${NUM_WORKERS:-4}"
 LOG_BATCH_EVERY="${LOG_BATCH_EVERY:-0}"

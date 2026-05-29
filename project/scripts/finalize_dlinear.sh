@@ -3,7 +3,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-RUNS_GROUP="${RUNS_GROUP:-dlinear_seq_168}"
+SEQ_LEN="${SEQ_LEN:-168}"
+RUNS_GROUP="${RUNS_GROUP:-dlinear_seq_${SEQ_LEN}}"
 
 python3 src/report/aggregate_seeds.py \
   --model dlinear \

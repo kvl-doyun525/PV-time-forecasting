@@ -12,7 +12,8 @@ if [[ ! -f "${TARGET}" ]]; then
 fi
 
 COMPOSE=(docker compose -f docker/docker-compose.yml)
-RUNS_GROUP="${RUNS_GROUP:-llama_lora_seq_168}"
+SEQ_LEN="${SEQ_LEN:-168}"
+RUNS_GROUP="${RUNS_GROUP:-llama_lora_seq_${SEQ_LEN}}"
 OUT_BASE="artifacts/training_runs/${RUNS_GROUP}"
 MODEL_PATH="${LLAMA_MODEL_PATH:-/models/meta-llama/Llama-3.2-1B-Instruct}"
 

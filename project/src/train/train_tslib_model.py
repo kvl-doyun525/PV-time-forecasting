@@ -242,6 +242,26 @@ def _prepend_sys_path_front(path: Path) -> None:
     sys.path.insert(0, s)
 
 
+def _patch_timellm_gpt2_tokenizer_to_fast() -> None:
+    """
+    TimeLLM 기본은 GPT2Tokenizer(느린 Python+regex C 경로)인데,
+    tokenization_utils / regex 와 CUDA·스레드가 겹칠 때 segfault 가 보고된다.
+    동일 from_pretrained API 인 GPT2TokenizerFast(Rust tokenizers)로 모듈 전역명을 바꿔 회피한다.
+    """
+    import models.TimeLLM as timellm_mod
+
+    if getattr(timellm_mod, "_time_forecasting_gpt2_fast_tokenizer_patch", False):
+        return
+    from transformers import GPT2TokenizerFast
+
+    timellm_mod.GPT2Tokenizer = GPT2TokenizerFast
+    timellm_mod._time_forecasting_gpt2_fast_tokenizer_patch = True  # type: ignore[attr-defined]
+    print(
+        "[train] TimeLLM: GPT2Tokenizer → GPT2TokenizerFast (Rust tokenizers 경로)",
+        flush=True,
+    )
+
+
 def _patch_timellm_patch_embedding_input_dtype(model: nn.Module) -> None:
     """
     TimeLLM.forecast 가 patch_embedding 호출 전 x_enc.to(bfloat16) 을 강제하는데,
@@ -274,6 +294,7 @@ def build_model(model_name: str, configs: SimpleNamespace, args: Namespace) -> n
         # TSLib이 sys.path 앞에 있으면 `layers.Embed`가 TSLib PatchEmbedding( padding 필수 )로
         # 잡혀 Time-LLM 호출 시그니처와 충돌한다 → Time-LLM 루트를 반드시 맨 앞에 둔다.
         _prepend_sys_path_front(_timellm_repo_root())
+        _patch_timellm_gpt2_tokenizer_to_fast()
         from models.TimeLLM import Model
     else:
         raise ValueError(f"지원하지 않는 모델: {model_name}")
@@ -299,18 +320,18 @@ def train_one_epoch(
     ep = epoch if epoch is not None else "?"
     ne = epochs if epochs is not None else "?"
     nw = getattr(loader, "num_workers", 0)
-    print(
-        f"[batch] epoch {ep}/{ne} {phase}: 시작 "
-        f"(배치 수={n_batches}, num_workers={nw}, 첫 배치 대기 중일 수 있음)",
-        flush=True,
-    )
+    # print(
+    #     f"[batch] epoch {ep}/{ne} {phase}: 시작 "
+    #     f"(배치 수={n_batches}, num_workers={nw}, 첫 배치 대기 중일 수 있음)",
+    #     flush=True,
+    # )
     for bi, (x, y) in enumerate(loader, start=1):
-        if bi == 1:
-            print(
-                f"[batch] epoch {ep}/{ne} {phase}: 첫 배치 수신 → GPU 전달·forward… "
-                f"(모델·배치에 따라 첫 스텝이 오래 걸릴 수 있음)",
-                flush=True,
-            )
+        # if bi == 1:
+        #     print(
+        #         f"[batch] epoch {ep}/{ne} {phase}: 첫 배치 수신 → GPU 전달·forward… "
+        #         f"(모델·배치에 따라 첫 스텝이 오래 걸릴 수 있음)",
+        #         flush=True,
+        #     )
         x = x.to(device, non_blocking=True)
         y = y.to(device, non_blocking=True)
         y_target = y[:, :, target_idx : target_idx + 1]
@@ -326,11 +347,11 @@ def train_one_epoch(
         optimizer.step()
         total_loss += loss.item()
 
-        if bi == 1:
-            print(
-                f"[batch] epoch {ep}/{ne} {phase}: 첫 배치 step 완료 loss={loss.item():.6f}",
-                flush=True,
-            )
+        # if bi == 1:
+        #     print(
+        #         f"[batch] epoch {ep}/{ne} {phase}: 첫 배치 step 완료 loss={loss.item():.6f}",
+        #         flush=True,
+        #     )
 
         if log_batch_every > 0 and (bi % log_batch_every == 0 or bi == n_batches):
             print(
@@ -358,17 +379,17 @@ def validate(
     ep = epoch if epoch is not None else "?"
     ne = epochs if epochs is not None else "?"
     nw = getattr(loader, "num_workers", 0)
-    print(
-        f"[batch] epoch {ep}/{ne} valid: 시작 (배치 수={n_batches}, num_workers={nw})",
-        flush=True,
-    )
+    # print(
+    #     f"[batch] epoch {ep}/{ne} valid: 시작 (배치 수={n_batches}, num_workers={nw})",
+    #     flush=True,
+    # )
     with torch.no_grad():
         for bi, (x, y) in enumerate(loader, start=1):
-            if bi == 1:
-                print(
-                    f"[batch] epoch {ep}/{ne} valid: 첫 배치 수신 → GPU·forward…",
-                    flush=True,
-                )
+            # if bi == 1:
+            #     print(
+            #         f"[batch] epoch {ep}/{ne} valid: 첫 배치 수신 → GPU·forward…",
+            #         flush=True,
+            #     )
             x = x.to(device, non_blocking=True)
             y = y.to(device, non_blocking=True)
             y_target = y[:, :, target_idx : target_idx + 1]
@@ -379,11 +400,11 @@ def validate(
             step_loss = criterion(out_target, y_target).item()
             total_loss += step_loss
 
-            if bi == 1:
-                print(
-                    f"[batch] epoch {ep}/{ne} valid: 첫 배치 완료 batch_loss={step_loss:.6f}",
-                    flush=True,
-                )
+            # if bi == 1:
+            #     print(
+            #         f"[batch] epoch {ep}/{ne} valid: 첫 배치 완료 batch_loss={step_loss:.6f}",
+            #         flush=True,
+            #     )
 
             if log_batch_every > 0 and (bi % log_batch_every == 0 or bi == n_batches):
                 print(

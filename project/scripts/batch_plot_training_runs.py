@@ -5,14 +5,13 @@
 (첫 k행이 아님 — 정렬된 전체 행을 N-1 구간에 k개로 등분한 인덱스, 0·N-1 포함)
 
 각 예측 파일이 위치한 run 폴더 안에 `graphs/` 디렉터리를 만들고 PNG를 저장한다.
-
-복구: `recup_dir.7/f567513912.py` (권한 처리·`--time-axis`·스킵 로직) 기준, `--time-axis` 기본은 꺼짐.
+`seq_len` 은 run 상위 폴더명(`*_seq_720` 등)에서 자동 추론한다. `--seq-len` 으로만 강제 가능.
+기존 PNG는 건너뛰며, `--force` 로 전부 다시 그린다.
 """
 
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import sys
 from pathlib import Path
@@ -27,6 +26,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.report.plot_forecast_samples import plot_one_sample
 
 PRED_PATTERN = re.compile(r"predictions_test_(\d+)h\.parquet$")
+SEQ_DIR_PATTERN = re.compile(r"_seq_(\d+)")
+DEFAULT_SEQ_LEN = 168
 
 
 def evenly_spaced_indices(n_rows: int, k: int) -> list[int]:
@@ -52,17 +53,77 @@ def discover_prediction_parquets(training_runs_root: Path) -> list[Path]:
     return [p for p in paths if horizon_from_filename(p) is not None]
 
 
+def seq_len_from_path(pred_path: Path, training_runs_root: Path) -> int | None:
+    """`patchtst_seq_720/...` 처럼 상위 폴더명의 `_seq_N` 에서 입력 길이 추론."""
+    try:
+        rel = pred_path.parent.relative_to(training_runs_root.resolve())
+    except ValueError:
+        rel = pred_path.parent
+    for part in reversed(rel.parts):
+        m = SEQ_DIR_PATTERN.search(part)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def seq_len_from_checkpoint(run_dir: Path) -> int | None:
+    ckpt_path = run_dir / "best_model.pt"
+    if not ckpt_path.is_file():
+        return None
+    try:
+        import torch
+    except ImportError:
+        return None
+    try:
+        ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    except Exception:
+        return None
+    if not isinstance(ckpt, dict):
+        return None
+    args = ckpt.get("args")
+    if isinstance(args, dict) and args.get("seq_len") is not None:
+        return int(args["seq_len"])
+    return None
+
+
+def resolve_seq_len(
+    pred_path: Path,
+    training_runs_root: Path,
+    override: int | None = None,
+) -> int:
+    if override is not None:
+        return override
+    from_path = seq_len_from_path(pred_path, training_runs_root)
+    if from_path is not None:
+        return from_path
+    from_ckpt = seq_len_from_checkpoint(pred_path.parent)
+    if from_ckpt is not None:
+        return from_ckpt
+    return DEFAULT_SEQ_LEN
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="training_runs 전체 예측 parquet → 균등 샘플 그래프 일괄 생성")
     parser.add_argument("--training-runs", type=Path, default=PROJECT_ROOT / "artifacts" / "training_runs")
     parser.add_argument("--feature-mart", type=Path, default=PROJECT_ROOT / "artifacts" / "feature_mart_per_site")
-    parser.add_argument("--seq-len", type=int, default=168)
+    parser.add_argument(
+        "--seq-len",
+        type=int,
+        default=None,
+        help=f"입력 길이 강제 (기본: run 경로 `_seq_N` → best_model.pt → {DEFAULT_SEQ_LEN})",
+    )
     parser.add_argument("--n-samples", type=int, default=100)
     parser.add_argument("--capacity-kw", type=float, default=None)
     parser.add_argument("--dpi", type=int, default=150)
     parser.add_argument(
+        "--force",
+        action="store_true",
+        help="graphs/ 에 PNG가 이미 있어도 다시 생성",
+    )
+    parser.add_argument(
         "--time-axis",
         action="store_true",
+        default=True,
         help="x축을 예측 시작 시각 기준 실제 일시(시간별)로 표시",
     )
     parser.add_argument("--dry-run", action="store_true", help="파일 목록만 출력하고 그리지 않음")
@@ -81,6 +142,7 @@ def main() -> None:
     feature_mart_str = str(fm)
 
     total_png = 0
+    skipped_png = 0
     for pred_path in parquet_files:
         horizon = horizon_from_filename(pred_path)
         assert horizon is not None
@@ -88,6 +150,7 @@ def main() -> None:
         run_dir = pred_path.parent
         graphs_dir = run_dir / "graphs"
         stem = run_dir.name
+        seq_len = resolve_seq_len(pred_path, root, args.seq_len)
 
         df = pd.read_parquet(pred_path).sort_values(["site_id", "timestamp"]).reset_index(drop=True)
         n = len(df)
@@ -95,7 +158,8 @@ def main() -> None:
 
         print(
             f"[batch_plot] {pred_path.relative_to(PROJECT_ROOT)} "
-            f"| rows={n} horizon={horizon} | 균등 {len(indices)}개 → {graphs_dir.relative_to(PROJECT_ROOT)}"
+            f"| rows={n} horizon={horizon} seq_len={seq_len} "
+            f"| 균등 {len(indices)}개 → {graphs_dir.relative_to(PROJECT_ROOT)}"
         )
 
         if args.dry_run:
@@ -114,7 +178,8 @@ def main() -> None:
         for seq_i, idx in enumerate(indices):
             row = df.iloc[idx]
             fname = graphs_dir / f"{stem}_sample_{seq_i:03d}_row{idx}_site_{row['site_id']}.png"
-            if os.path.exists(fname):
+            if not args.force and fname.exists():
+                skipped_png += 1
                 continue
             fig, ax = plt.subplots(figsize=(10, 4.5))
             plot_one_sample(
@@ -122,7 +187,7 @@ def main() -> None:
                 sample_idx=idx,
                 row=row,
                 feature_mart=feature_mart_str,
-                seq_len=args.seq_len,
+                seq_len=seq_len,
                 horizon=horizon,
                 compare_rows=[],
                 capacity_kw=args.capacity_kw,
@@ -143,7 +208,7 @@ def main() -> None:
         print(f"[dry-run] 대상 parquet {len(parquet_files)}개")
         return
 
-    print(f"[batch_plot] 완료: 총 PNG {total_png}개 생성")
+    print(f"[batch_plot] 완료: PNG {total_png}개 생성, 기존 파일 {skipped_png}개 건너뜀")
 
 
 if __name__ == "__main__":

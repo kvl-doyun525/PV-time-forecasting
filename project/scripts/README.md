@@ -7,7 +7,7 @@
 - **GPU**: `docker compose ... run --rm unified` / `time-llm` 은 `docker-compose.yml` 의 GPU 예약을 따른다.
 - **데이터**: 기본 mart는 `artifacts/feature_mart_per_site` (`FEATURE_MART` 로 변경).  
   `run_*_future_nwp.sh` 는 기본 **`artifacts/feature_mart_track_b_per_site`** (`fcst_*` fan 필요).
-- **실험 그룹 폴더**: `RUNS_GROUP` 환경변수 (예: `dlinear_seq_168`, `segrnn_seq_168`). 미설정 시 각 스크립트 기본값 사용.
+- **실험 그룹 폴더**: `RUNS_GROUP` 으로 명시 가능. 미설정 시 기본값은 **`{모델}_seq_${SEQ_LEN}`** 형태(예: `SEQ_LEN=168` → `dlinear_seq_168`, `SEQ_LEN=720` → `dlinear_seq_720`)라 `SEQ_LEN`만 바꿔도 이전 결과 폴더를 덮어쓰지 않는다.
 - **배치**: `BATCH_SIZE` (기본: DLinear/SegRNN/PatchTST·해당 future_nwp 는 `256`, TimeLLM·`run_timellm*_future_nwp.sh` 는 `32`). `BATCH_SIZE=128 bash scripts/run_dlinear.sh` 처럼 환경변수로 덮어쓴다.
 - **train 윈도 슬라이스(행)**: `TRAIN_WINDOW_STRIDE` (기본 `24` → `train_tslib_model.py --train-window-stride`). 첫 자정 앵커 끄기: `NO_MIDNIGHT_WINDOW_ALIGN=1` → `--no-midnight-window-align` 전달.
 - **이미 학습된 런 건너뛰기**: 기본적으로 `--output-dir` 아래에 `metrics_test_<pred_len>h.json` 이 있으면 해당 조합은 스킵한다. 강제 재학습은 `SKIP_IF_DONE=0 bash scripts/run_dlinear_future_nwp.sh` .
@@ -55,12 +55,12 @@ BATCH_SIZE=128 NUM_WORKERS=8 bash scripts/run_train.sh
 | `build_all.sh` | Docker 이미지 빌드 |
 | `verify_gpu.sh` | `nvidia-smi` 스모크 |
 | `run_dlinear.sh` | DLinear 24/48/72h × 3 seed → `aggregate_seeds` + `build_leaderboard` |
-| `run_segrnn.sh` | SegRNN `seg24` × 24/48/72 × 3 seed (seq_len=168 호환) |
+| `run_segrnn.sh` | SegRNN `seg24` × 24/48/72 × 3 seed (`SEQ_LEN` 기본 168, `RUNS_GROUP` 기본 `segrnn_seq_${SEQ_LEN}`) |
 | `run_patchtst.sh` | PatchTST §8 매트릭스 27 run |
-| `run_dlinear_future_nwp.sh` | Track B mart + `--merge-future-nwp-…` → `dlinear_future_nwp_seq_168` |
-| `run_segrnn_future_nwp.sh` | 동일 → `segrnn_future_nwp_seq_168` |
-| `run_patchtst_future_nwp.sh` | 동일 → `patchtst_future_nwp_seq_168` |
-| `run_timellm_future_nwp.sh` | `time-llm` 이미지 + merge → `timellm_future_nwp_seq_168` |
+| `run_dlinear_future_nwp.sh` | Track B mart + `--merge-future-nwp-…` → 기본 `dlinear_future_nwp_seq_${SEQ_LEN}` |
+| `run_segrnn_future_nwp.sh` | 동일 → 기본 `segrnn_future_nwp_seq_${SEQ_LEN}` |
+| `run_patchtst_future_nwp.sh` | 동일 → 기본 `patchtst_future_nwp_seq_${SEQ_LEN}` |
+| `run_timellm_future_nwp.sh` | `time-llm` 이미지 + merge → 기본 `timellm_future_nwp_seq_${SEQ_LEN}` |
 | `run_train.sh` | future_nwp 스크립트 연쇄 실행 + 공통 env (파일 안 `export`·`bash` 줄 편집) |
 | `run_timellm.sh` | Time-LLM (`time-llm` 이미지), merge 없음 |
 | `run_baseline.sh` | Seasonal + Persistence (`baseline_seasonal_naive.py`) |
@@ -72,7 +72,7 @@ BATCH_SIZE=128 NUM_WORKERS=8 bash scripts/run_train.sh
 
 ## Python 집계·리더보드 (`src/report/`)
 
-- `python3 src/report/aggregate_seeds.py --model segrnn --runs-dir artifacts/training_runs --runs-group segrnn_seq_168 --horizons 24 48 72`
+- `python3 src/report/aggregate_seeds.py --model segrnn --runs-dir artifacts/training_runs --runs-group <학습 시 RUNS_GROUP 과 동일> --horizons 24 48 72` (예: `segrnn_seq_168`, `dlinear_seq_720`)
 - `python3 src/report/build_leaderboard.py --runs-dir artifacts/training_runs --output artifacts/leaderboard.md` — horizon별 표, `h{H}_seed{N}` vs `h{H}_seed_{N}` 폴더 쌍 비교 표, Raw 절. `--max-raw-per-horizon` 기본 80.
 - 원시 metrics만 표로: `python3 src/report/build_accuracy_leaderboard.py`
 

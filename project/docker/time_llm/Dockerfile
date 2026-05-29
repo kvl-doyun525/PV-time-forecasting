@@ -23,9 +23,10 @@ RUN git clone --depth 1 https://github.com/KimMeen/Time-LLM.git /workspace/TimeL
 
 # TimeLLM.Model 과 동일한 HF id 로 빌드 시 캐시 (런타임 재다운로드 완화)
 RUN mkdir -p "$HF_HOME" && python -c "\
-from transformers import GPT2Model, GPT2Tokenizer; \
+from transformers import GPT2Model, GPT2Tokenizer, GPT2TokenizerFast; \
 GPT2Model.from_pretrained('openai-community/gpt2'); \
 GPT2Tokenizer.from_pretrained('openai-community/gpt2'); \
+GPT2TokenizerFast.from_pretrained('openai-community/gpt2'); \
 print('HF openai-community/gpt2 cached under', __import__('os').environ.get('HF_HOME'))"
 
 # src/, conf/, artifacts/ 는 런타임에 호스트 볼륨으로 마운트

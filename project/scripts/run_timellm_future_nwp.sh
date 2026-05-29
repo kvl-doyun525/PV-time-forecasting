@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Time-LLM + 미래 NWP fan 통합 입력 (time-llm 이미지, Track B mart)
-# 산출: timellm_future_nwp_seq_168
+# 산출 기본: timellm_future_nwp_seq_${SEQ_LEN}
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,8 +12,8 @@ _SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_SCRIPTS_DIR}/lib_training_skip.sh"
 
 COMPOSE=(docker compose -f docker/docker-compose.yml)
-RUNS_GROUP="${RUNS_GROUP:-timellm_future_nwp_seq_168}"
 SEQ_LEN="${SEQ_LEN:-168}"
+RUNS_GROUP="${RUNS_GROUP:-timellm_future_nwp_seq_${SEQ_LEN}}"
 MART="${FEATURE_MART:-artifacts/feature_mart_track_b_per_site}"
 NWP_VARS="${FUTURE_NWP_VARS:-tmp,reh,wsd,vec,sky,pcp}"
 NUM_WORKERS="${NUM_WORKERS:-12}"

@@ -11,8 +11,8 @@ _SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_SCRIPTS_DIR}/lib_training_skip.sh"
 
 COMPOSE=(docker compose -f docker/docker-compose.yml)
-RUNS_GROUP="${RUNS_GROUP:-timellm_seq_168}"
 SEQ_LEN="${SEQ_LEN:-168}"
+RUNS_GROUP="${RUNS_GROUP:-timellm_seq_${SEQ_LEN}}"
 MART="${FEATURE_MART:-artifacts/feature_mart_per_site}"
 NUM_WORKERS="${NUM_WORKERS:-4}"
 LOG_BATCH_EVERY="${LOG_BATCH_EVERY:-0}"

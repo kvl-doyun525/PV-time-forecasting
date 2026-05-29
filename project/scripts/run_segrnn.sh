@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SegRNN: seq_len=168 일 때 seg_len 은 168과 pred_len 의 약수여야 함.
+# SegRNN: SEQ_LEN(기본 168)에 맞춰 seg_len·pred_len 조합을 맞춰야 함.
 # (seg48 × pred48 은 168%48≠0 으로 실패하므로 제외) → seg24 만 사용, pred 24/48/72 × 3 seed = 9 runs
 set -euo pipefail
 
@@ -12,8 +12,8 @@ _SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_SCRIPTS_DIR}/lib_training_skip.sh"
 
 COMPOSE=(docker compose -f docker/docker-compose.yml)
-RUNS_GROUP="${RUNS_GROUP:-segrnn_seq_168}"
 SEQ_LEN="${SEQ_LEN:-168}"
+RUNS_GROUP="${RUNS_GROUP:-segrnn_seq_${SEQ_LEN}}"
 SEG_LEN="${SEG_LEN:-24}"
 MART="${FEATURE_MART:-artifacts/feature_mart_per_site}"
 NUM_WORKERS="${NUM_WORKERS:-12}"

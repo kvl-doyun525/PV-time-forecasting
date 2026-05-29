@@ -3,8 +3,7 @@
 `training_runs/**/summary.json` 과 `metrics_test_*h.json`을 읽어
 `artifacts/leaderboard.md`로 요약한다.
 
-horizon(24h / 48h / 72h)마다 별도 표·절을 두고, `h24_seed42` vs `h24_seed_42` 같이
-복구 전·후 폴더 네이밍 쌍이 있으면 비교 표를 추가한다.
+horizon(24h / 48h / 72h)마다 별도 표·절을 둔다.
 """
 
 from __future__ import annotations
@@ -17,9 +16,6 @@ from pathlib import Path
 
 
 _RE_METRICS_H = re.compile(r"metrics_test_(\d+)h\.json$")
-# 복구 전: h24_seed42 / 복구 후: h24_seed_42
-_RE_LEGACY_H_SEED = re.compile(r"^h(\d+)_seed(\d+)$")
-_RE_NEW_H_SEED = re.compile(r"^h(\d+)_seed_(\d+)$")
 
 
 def _horizon_sort_key(hk: str) -> int:
@@ -57,88 +53,6 @@ def _short_group(s: str, max_len: int = 28) -> str:
     return s[: max_len - 1] + "…"
 
 
-def _read_metrics_json(path: Path) -> dict | None:
-    if not path.is_file():
-        return None
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return None
-
-
-def _emit_legacy_vs_new_naming(lines: list[str], base: Path) -> None:
-    """h{H}_seed{N} vs h{H}_seed_{N} 동시 존재 그룹만 비교 표."""
-    lines.append("## Run 폴더 네이밍 비교 (복구 전 `h{H}_seed{N}` vs 복구 후 `h{H}_seed_{N}`)")
-    lines.append("")
-    lines.append(
-        "동일 horizon·seed에서 두 폴더의 `metrics_test_{H}h.json`을 나란히 둔다. "
-        "ΔMAE는 복구 후 − 복구 전(MAE·RMSE·daytime_MAE는 작을수록 보통 유리)."
-    )
-    lines.append("")
-    if not base.is_dir():
-        lines.append("_(runs-dir 없음)_")
-        lines.append("")
-        return
-
-    any_block = False
-    for group_dir in sorted(p for p in base.iterdir() if p.is_dir()):
-        legacy: dict[tuple[int, int], str] = {}
-        newm: dict[tuple[int, int], str] = {}
-        for sub in group_dir.iterdir():
-            if not sub.is_dir():
-                continue
-            n = sub.name
-            m_new = _RE_NEW_H_SEED.match(n)
-            if m_new:
-                newm[(int(m_new.group(1)), int(m_new.group(2)))] = n
-                continue
-            m_old = _RE_LEGACY_H_SEED.match(n)
-            if m_old:
-                legacy[(int(m_old.group(1)), int(m_old.group(2)))] = n
-        keys = sorted(set(legacy) & set(newm))
-        if not keys:
-            continue
-        any_block = True
-        lines.append(f"### `{group_dir.name}`")
-        lines.append("")
-        lines.append(
-            "| H | seed | 복구 전 | MAE | RMSE | dayMAE | dayEerr | "
-            "복구 후 | MAE | RMSE | dayMAE | dayEerr | ΔMAE |"
-        )
-        lines.append(
-            "|---:|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|"
-        )
-        for H, seed in keys:
-            lo, no = legacy[(H, seed)], newm[(H, seed)]
-            p_old = group_dir / lo / f"metrics_test_{H}h.json"
-            p_new = group_dir / no / f"metrics_test_{H}h.json"
-            o = _read_metrics_json(p_old)
-            n = _read_metrics_json(p_new)
-            o_mae = o.get("MAE") if o else None
-            n_mae = n.get("MAE") if n else None
-            if isinstance(o_mae, (int, float)) and isinstance(n_mae, (int, float)):
-                d_s = _fmt_num(float(n_mae) - float(o_mae))
-            else:
-                d_s = "—"
-            lines.append(
-                f"| {H} | {seed} | `{_short_group(lo, 14)}` | {_fmt_num(o.get('MAE') if o else None)} | "
-                f"{_fmt_num(o.get('RMSE') if o else None)} | "
-                f"{_fmt_num(o.get('daytime_MAE') if o else None)} | "
-                f"{_fmt_num(o.get('daily_energy_error') if o else None)} | "
-                f"`{_short_group(no, 14)}` | {_fmt_num(n.get('MAE') if n else None)} | "
-                f"{_fmt_num(n.get('RMSE') if n else None)} | "
-                f"{_fmt_num(n.get('daytime_MAE') if n else None)} | "
-                f"{_fmt_num(n.get('daily_energy_error') if n else None)} | {d_s} |"
-            )
-        lines.append("")
-
-    if not any_block:
-        lines.append(
-            "_(해당 네이밍 쌍이 있는 실험 그룹 없음 — `h24_seed42` 형과 `h24_seed_42` 형이 동시에 있어야 함)_"
-        )
-        lines.append("")
-
-
 def main() -> None:
     ap = argparse.ArgumentParser(description="요약 리더보드 MD (horizon별 표)")
     ap.add_argument(
@@ -173,8 +87,6 @@ def main() -> None:
         "긴 `group`/경로는 잘림(`…`).",
         "",
     ]
-
-    _emit_legacy_vs_new_naming(lines, base)
 
     # --- summary.json: horizon별 표 ---
     summary_by_h: dict[str, list[dict[str, str]]] = defaultdict(list)

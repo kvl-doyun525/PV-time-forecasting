@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SegRNN + 미래 NWP fan 통합 입력 (Track B mart, seq168·seg24·pred 24/48/72)
-# 산출: segrnn_future_nwp_seq_168
+# 산출 기본: segrnn_future_nwp_seq_${SEQ_LEN}
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,14 +12,14 @@ _SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_SCRIPTS_DIR}/lib_training_skip.sh"
 
 COMPOSE=(docker compose -f docker/docker-compose.yml)
-RUNS_GROUP="${RUNS_GROUP:-segrnn_future_nwp_seq_168}"
 SEQ_LEN="${SEQ_LEN:-168}"
+RUNS_GROUP="${RUNS_GROUP:-segrnn_future_nwp_seq_${SEQ_LEN}}"
 SEG_LEN="${SEG_LEN:-24}"
 MART="${FEATURE_MART:-artifacts/feature_mart_track_b_per_site}"
 NWP_VARS="${FUTURE_NWP_VARS:-tmp,reh,wsd,vec,sky,pcp}"
 NUM_WORKERS="${NUM_WORKERS:-12}"
 LOG_BATCH_EVERY="${LOG_BATCH_EVERY:-0}"
-BATCH_SIZE="${BATCH_SIZE:-1024}"
+BATCH_SIZE="${BATCH_SIZE:-256}"
 TRAIN_WINDOW_STRIDE="${TRAIN_WINDOW_STRIDE:-24}"
 NO_MIDNIGHT_WINDOW_ALIGN="${NO_MIDNIGHT_WINDOW_ALIGN:-0}"
 OUT_BASE="artifacts/training_runs/${RUNS_GROUP}"

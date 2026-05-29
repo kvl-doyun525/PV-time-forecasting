@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DLinear + 미래 NWP fan 통합 입력 (`--merge-future-nwp-into-encoder-input`, Track B mart)
-# 산출 그룹명: dlinear_future_nwp_seq_168 (기존 artifacts와 동일)
+# 산출 그룹명 기본: dlinear_future_nwp_seq_${SEQ_LEN} (RUNS_GROUP 으로 재정의 가능)
 # 사용: project/ 에서 bash scripts/run_dlinear_future_nwp.sh
 set -euo pipefail
 
@@ -13,8 +13,8 @@ _SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_SCRIPTS_DIR}/lib_training_skip.sh"
 
 COMPOSE=(docker compose -f docker/docker-compose.yml)
-RUNS_GROUP="${RUNS_GROUP:-dlinear_future_nwp_seq_168}"
 SEQ_LEN="${SEQ_LEN:-168}"
+RUNS_GROUP="${RUNS_GROUP:-dlinear_future_nwp_seq_${SEQ_LEN}}"
 MART="${FEATURE_MART:-artifacts/feature_mart_track_b_per_site}"
 NWP_VARS="${FUTURE_NWP_VARS:-tmp,reh,wsd,vec,sky,pcp}"
 NUM_WORKERS="${NUM_WORKERS:-12}"
