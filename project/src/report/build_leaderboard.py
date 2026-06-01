@@ -17,6 +17,20 @@ from pathlib import Path
 
 _RE_METRICS_H = re.compile(r"metrics_test_(\d+)h\.json$")
 
+# (summary.json 키, 표 헤더, 낮을수록 좋음)
+_SUMMARY_METRICS: list[tuple[str, str, bool]] = [
+    ("MAE_mean", "MAE_m", True),
+    ("MAE_std", "MAE_σ", True),
+    ("daytime_MAE_mean", "dayMAE_m", True),
+    ("daily_energy_error_mean", "dEerr_m", True),
+    ("daily_energy_error_std", "dEerr_σ", True),
+]
+
+_RANK_STYLE = {
+    1: "background-color:#b9f6ca",  # 1위: 연녹
+    2: "background-color:#fff59d",  # 2위: 연노랑
+}
+
 
 def _horizon_sort_key(hk: str) -> int:
     m = re.match(r"(\d+)h", hk)
@@ -53,6 +67,141 @@ def _short_group(s: str, max_len: int = 28) -> str:
     return s[: max_len - 1] + "…"
 
 
+def _parse_metric(x: object) -> float | None:
+    if x is None or x == "":
+        return None
+    if isinstance(x, bool):
+        return float(x)
+    if isinstance(x, (int, float)):
+        return float(x)
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def _metric_ranks(values: list[float | None], *, lower_better: bool) -> list[int | None]:
+    """각 인덱스에 1(최고)·2(차선) 또는 None."""
+    ranked = sorted(
+        ((i, v) for i, v in enumerate(values) if v is not None),
+        key=lambda iv: iv[1],
+        reverse=not lower_better,
+    )
+    out: list[int | None] = [None] * len(values)
+    for rank, (idx, _) in enumerate(ranked[:2], start=1):
+        out[idx] = rank
+    return out
+
+
+def _styled_cell(text: str, rank: int | None) -> str:
+    if rank is None:
+        return text
+    style = _RANK_STYLE.get(rank)
+    if not style:
+        return text
+    return f'<span style="{style}">{text}</span>'
+
+
+def _row_label(group: str, model: str) -> str:
+    return f"{group} / {model}"
+
+
+def _emit_best_per_horizon(
+    lines: list[str],
+    summary_by_h: dict[str, list[dict[str, object]]],
+) -> None:
+    lines.append("## Best per horizon (summary.json)")
+    lines.append("")
+    lines.append(
+        "seed 집계 기준. **종합 1위**는 `MAE_m` 최소. "
+        "아래 표의 1·2위 셀은 연녹·연노랑으로 표시한다."
+    )
+    lines.append("")
+
+    if not summary_by_h:
+        lines.append("_(summary.json 없음)_")
+        lines.append("")
+        return
+
+    for hk in sorted(summary_by_h.keys(), key=_horizon_sort_key):
+        rows = summary_by_h[hk]
+        mae_vals = [_parse_metric(r.get("MAE_mean_raw")) for r in rows]
+        mae_ranks = _metric_ranks(mae_vals, lower_better=True)
+        best_idx = next((i for i, rk in enumerate(mae_ranks) if rk == 1), None)
+
+        lines.append(f"### Horizon {hk}")
+        lines.append("")
+        if best_idx is not None:
+            br = rows[best_idx]
+            lines.append(
+                f"- **종합 1위 (MAE_m)**: `{br['group']}` / `{br['model']}` "
+                f"— MAE_m={br['MAE_mean']}, dayMAE_m={br['daytime_MAE_mean']}, "
+                f"dEerr_m={br['daily_energy_error_mean']}"
+            )
+            lines.append("")
+
+        lines.append("| metric | 1st | value | 2nd | value |")
+        lines.append("|---|---|---:|---|---:|")
+        for key, header, lower_better in _SUMMARY_METRICS:
+            vals = [_parse_metric(r.get(f"{key}_raw")) for r in rows]
+            ranks = _metric_ranks(vals, lower_better=lower_better)
+            first_label, first_val = "—", "—"
+            second_label, second_val = "—", "—"
+            for idx, rk in enumerate(ranks):
+                if rk == 1:
+                    first_label = _row_label(
+                        str(rows[idx]["group"]), str(rows[idx]["model"])
+                    )
+                    first_val = str(rows[idx][key])
+                elif rk == 2:
+                    second_label = _row_label(
+                        str(rows[idx]["group"]), str(rows[idx]["model"])
+                    )
+                    second_val = str(rows[idx][key])
+            lines.append(
+                f"| {header} | {first_label} | {first_val} | "
+                f"{second_label} | {second_val} |"
+            )
+        lines.append("")
+
+
+def _emit_summary_tables(
+    lines: list[str],
+    summary_by_h: dict[str, list[dict[str, object]]],
+) -> None:
+    lines.append("## summary.json (seed 집계, horizon별)")
+    lines.append("")
+    if not summary_by_h:
+        lines.append("_(summary.json 없음)_")
+        lines.append("")
+        return
+
+    for hk in sorted(summary_by_h.keys(), key=_horizon_sort_key):
+        rows = summary_by_h[hk]
+        rows.sort(key=lambda r: (str(r["group"]), str(r["model"])))
+
+        col_ranks: dict[str, list[int | None]] = {}
+        for key, _, lower_better in _SUMMARY_METRICS:
+            vals = [_parse_metric(r.get(f"{key}_raw")) for r in rows]
+            col_ranks[key] = _metric_ranks(vals, lower_better=lower_better)
+
+        lines.append(f"### Horizon {hk}")
+        lines.append("")
+        lines.append(
+            "| group | model | MAE_m | MAE_σ | dayMAE_m | dEerr_m | dEerr_σ |"
+        )
+        lines.append("|---|---|---:|---:|---:|---:|---:|")
+        for ri, r in enumerate(rows):
+            cells = [
+                str(r["group"]),
+                str(r["model"]),
+            ]
+            for key, _, _ in _SUMMARY_METRICS:
+                cells.append(_styled_cell(str(r[key]), col_ranks[key][ri]))
+            lines.append("| " + " | ".join(cells) + " |")
+        lines.append("")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="요약 리더보드 MD (horizon별 표)")
     ap.add_argument(
@@ -84,12 +233,12 @@ def main() -> None:
         "",
         "horizon(예측 길이)마다 표를 나눈다. `summary.json`은 seed 집계, Raw는 개별 `metrics_test_*h.json`. "
         "숫자는 표시용으로 소수 4자리(또는 매우 작/큰 값은 과학 표기)로 반올림한다. "
-        "긴 `group`/경로는 잘림(`…`).",
+        "긴 `group`/경로는 잘림(`…`). "
+        "summary 표에서 **연녹=1위**, **연노랑=2위** (지표별, 낮을수록 좋음).",
         "",
     ]
 
-    # --- summary.json: horizon별 표 ---
-    summary_by_h: dict[str, list[dict[str, str]]] = defaultdict(list)
+    summary_by_h: dict[str, list[dict[str, object]]] = defaultdict(list)
     if base.is_dir():
         for summ in sorted(base.rglob("summary.json")):
             try:
@@ -99,44 +248,18 @@ def main() -> None:
             model = str(data.get("model", ""))
             group = str(summ.parent.relative_to(base))
             for hk, block in (data.get("horizons") or {}).items():
-                summary_by_h[str(hk)].append(
-                    {
-                        "group": _short_group(group),
-                        "model": _short_group(model, 22),
-                        "MAE_mean": _fmt_num(block.get("MAE_mean")),
-                        "MAE_std": _fmt_num(block.get("MAE_std")),
-                        "daytime_MAE_mean": _fmt_num(block.get("daytime_MAE_mean")),
-                        "daily_energy_error_mean": _fmt_num(
-                            block.get("daily_energy_error_mean")
-                        ),
-                        "daily_energy_error_std": _fmt_num(
-                            block.get("daily_energy_error_std")
-                        ),
-                    }
-                )
+                row: dict[str, object] = {
+                    "group": _short_group(group),
+                    "model": _short_group(model, 22),
+                }
+                for key, _, _ in _SUMMARY_METRICS:
+                    raw = block.get(key)
+                    row[f"{key}_raw"] = raw
+                    row[key] = _fmt_num(raw)
+                summary_by_h[str(hk)].append(row)
 
-    lines.append("## summary.json (seed 집계, horizon별)")
-    lines.append("")
-    if not summary_by_h:
-        lines.append("_(summary.json 없음)_")
-        lines.append("")
-    else:
-        for hk in sorted(summary_by_h.keys(), key=_horizon_sort_key):
-            rows = summary_by_h[hk]
-            rows.sort(key=lambda r: (r["group"], r["model"]))
-            lines.append(f"### Horizon {hk}")
-            lines.append("")
-            lines.append(
-                "| group | model | MAE_m | MAE_σ | dayMAE_m | dEerr_m | dEerr_σ |"
-            )
-            lines.append("|---|---|---:|---:|---:|---:|---:|")
-            for r in rows:
-                lines.append(
-                    f"| {r['group']} | {r['model']} | {r['MAE_mean']} | {r['MAE_std']} | "
-                    f"{r['daytime_MAE_mean']} | {r['daily_energy_error_mean']} | "
-                    f"{r['daily_energy_error_std']} |"
-                )
-            lines.append("")
+    _emit_best_per_horizon(lines, summary_by_h)
+    _emit_summary_tables(lines, summary_by_h)
 
     # --- Raw metrics: horizon별 ---
     lines.append("## Raw metrics (개별 run, horizon별)")

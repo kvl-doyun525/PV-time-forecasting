@@ -24,12 +24,12 @@ echo "[run_train] FEATURE_MART=${FEATURE_MART:-<미설정·스크립트 기본>}
 
 bash scripts/run_dlinear.sh 2>&1 | tee logs/run_dlinear.log
 bash scripts/run_segrnn.sh 2>&1 | tee logs/run_segrnn.log
-# bash scripts/run_patchtst.sh 2>&1 | tee logs/run_patchtst.log
+bash scripts/run_patchtst.sh 2>&1 | tee logs/run_patchtst.log
 # bash scripts/run_timellm.sh 2>&1 | tee logs/run_timellm.log
 
-# bash scripts/run_dlinear_future_nwp.sh 2>&1 | tee logs/run_dlinear_future_nwp.log
-# bash scripts/run_segrnn_future_nwp.sh 2>&1 | tee logs/run_segrnn_future_nwp.log
-# bash scripts/run_patchtst_future_nwp.sh 2>&1 | tee logs/run_patchtst_future_nwp.log
+bash scripts/run_dlinear_future_nwp.sh 2>&1 | tee logs/run_dlinear_future_nwp.log
+bash scripts/run_segrnn_future_nwp.sh 2>&1 | tee logs/run_segrnn_future_nwp.log
+bash scripts/run_patchtst_future_nwp.sh 2>&1 | tee logs/run_patchtst_future_nwp.log
 # bash scripts/run_timellm_future_nwp.sh 2>&1 | tee logs/run_timellm_future_nwp.log
 
 echo "run_train: 완료."
